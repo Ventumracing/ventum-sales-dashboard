@@ -9,7 +9,8 @@
 body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 2rem 1.5rem 4rem; }
 .wrap { max-width: 960px; margin: 0 auto; }
 h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 14px; color: var(--text2); margin: 0 0 1.5rem; }
+.sub { font-size: 14px; color: var(--text2); margin: 0 0 1rem; }
+.vat-note { font-size: 13px; color: var(--muted); background: var(--card); border: 0.5px solid var(--border); border-radius: 8px; padding: 8px 12px; margin: 0 0 1.5rem; display: inline-block; }
 .note { font-size: 13px; color: var(--muted); background: var(--card); border: 0.5px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 1.5rem; }
 .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
 .metric { background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem; }
@@ -33,6 +34,7 @@ tr.total td { font-weight: 500; border-top: 0.5px solid var(--border); }
 <div class="wrap">
 <h1>Ventum House - Weekly Report</h1>
 <p class="sub">Week of 03-09 Aug 2026. Dear is the only source (Shopify no longer used).</p>
+<p class="vat-note">All figures exclude VAT (as reported by Dear).</p>
 <div class="note">Static snapshot deployed from the Google Sheet. Redeploy this page whenever you want it refreshed.</div>
 <div class="metrics">
 <div class="metric"><p class="label">Total sales</p><p class="value">15,065 AED</p></div>
