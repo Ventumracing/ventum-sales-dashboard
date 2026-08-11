@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ventum House - Weekly Dashboard</title>
+<style>
+:root { --bg:#f7f6f3; --card:#fff; --border:#e1e0d9; --text:#0b0b0b; --text2:#52514e; --muted:#898781; --accent-bg:#E1F5EE; --accent-text:#085041; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 2rem 1.5rem 4rem; }
+.wrap { max-width: 960px; margin: 0 auto; }
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+.sub { font-size: 14px; color: var(--text2); margin: 0 0 1.5rem; }
+.note { font-size: 13px; color: var(--muted); background: var(--card); border: 0.5px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 1.5rem; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+.metric { background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem; }
+.metric .label { font-size: 13px; color: var(--text2); margin: 0 0 6px; }
+.metric .value { font-size: 24px; font-weight: 500; margin: 0; }
+.metric .value.pos { color: var(--accent-text); }
+section { background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; }
+h2 { font-size: 16px; font-weight: 500; margin: 0 0 1rem; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 0.5px solid var(--border); }
+th { color: var(--text2); font-weight: 500; }
+td.num, th.num { text-align: right; }
+tr.total td { font-weight: 500; border-top: 0.5px solid var(--border); }
+.chart-wrap { position: relative; width: 100%; height: 340px; }
+.badge { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 6px; background: var(--accent-bg); color: var(--accent-text); }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px; font-size: 12px; color: var(--text2); }
+.legend span.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Ventum House - Weekly Report</h1>
+<p class="sub">Week of 03-09 Aug 2026. Master total = Dear (Shopify shown as supporting detail)</p>
+<div class="note">Static snapshot deployed from the Google Sheet. Redeploy this page whenever you want it refreshed.</div>
+<div class="metrics">
+<div class="metric"><p class="label">Total sales</p><p class="value">15,065 AED</p></div>
+<div class="metric"><p class="label">Total COGS</p><p class="value">5,756 AED</p></div>
+<div class="metric"><p class="label">Total profit</p><p class="value pos">9,310 AED</p></div>
+<div class="metric"><p class="label">Margin</p><p class="value">61.8%</p></div>
+</div>
+<section>
+<h2>Revenue by brand (Dear - master)</h2>
+<div class="legend"><span><span class="sw" style="background:#2a78d6"></span>Sale</span><span><span class="sw" style="background:#eb6834"></span>COGS</span><span><span class="sw" style="background:#1baf7a"></span>Profit</span></div>
+<div class="chart-wrap"><canvas id="brandChart" role="img" aria-label="Bar chart of sale, COGS and profit by brand"></canvas></div>
+</section>
+<section>
+<h2>Brand detail</h2>
+<table><thead><tr><th>Brand</th><th class="num">Sale (AED)</th><th class="num">COGS (AED)</th><th class="num">Profit (AED)</th></tr></thead><tbody id="brandTable"></tbody></table>
+</section>
+<section>
+<h2>Service and rental detail <span class="badge">Shopify</span></h2>
+<p class="sub">Only line item with activity this week - all other service/rental SKUs at zero.</p>
+<table><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Revenue (AED)</th></tr></thead>
+<tbody>
+<tr><td>Bike wash and waxing</td><td class="num">1</td><td class="num">160.00</td></tr>
+<tr class="total"><td>Total service + rental</td><td class="num">1</td><td class="num">160.00</td></tr>
+</tbody></table>
+</section>
+<section>
+<h2>Online vs in-store split <span class="badge">Shopify</span></h2>
+<div class="chart-wrap" style="height:220px;"><canvas id="channelChart" role="img" aria-label="Bar chart of revenue by channel"></canvas></div>
+<div class="note" style="margin:1rem 0 0;">In-store Shopify sales typically already sit inside the Dear brand totals above (Dear is master). This split is for online-channel visibility only.</div>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+var brands = [
+{ name: 'VENTUM', sale: 843.15, cogs: 356.41, profit: 486.74 },
+{ name: 'ENVE', sale: 4424.14, cogs: 867.14, profit: 3557.00 },
+{ name: 'POC Sports', sale: 0, cogs: 0, profit: 0 },
+{ name: 'QUOC', sale: 1998.10, cogs: 881.01, profit: 1117.09 },
+{ name: 'VITTORIA', sale: 364.77, cogs: 182.86, profit: 181.91 },
+{ name: 'XLAB', sale: 1089.93, cogs: 617.57, profit: 472.36 },
+{ name: 'LEZYNE', sale: 422.86, cogs: 235.48, profit: 187.38 },
+{ name: 'OTE SPORTS', sale: 28.58, cogs: 0.02, profit: 28.56 },
+{ name: 'Chamois', sale: 169.52, cogs: 97.14, profit: 72.38 },
+{ name: 'Wyld', sale: 0, cogs: 399.00, profit: -399.00 },
+{ name: 'TACX', sale: 1075.24, cogs: 855.20, profit: 220.04 },
+{ name: 'Schwalbe', sale: 588.57, cogs: 401.70, profit: 186.87 },
+{ name: 'CONTINENTAL', sale: 446.67, cogs: 291.85, profit: 154.82 },
+{ name: 'SHIMANO', sale: 160.95, cogs: 85.90, profit: 75.06 },
+{ name: 'SwissStop', sale: 283.81, cogs: 0, profit: 283.81 },
+{ name: 'OAKLEY', sale: 759.33, cogs: 484.30, profit: 275.03 },
+{ name: 'SERVICE', sale: 2409.54, cogs: 0, profit: 2409.54 }
+];
+function fmt(n) { return (n < 0 ? '-' : '') + Math.abs(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+var tbody = document.getElementById('brandTable');
+brands.forEach(function(b) {
+var tr = document.createElement('tr');
+tr.innerHTML = '<td>' + b.name + '</td><td class="num">' + (b.sale ? fmt(b.sale) : '-') + '</td><td class="num">' + (b.cogs ? fmt(b.cogs) : '-') + '</td><td class="num">' + (b.profit ? fmt(b.profit) : '-') + '</td>';
+tbody.appendChild(tr);
+});
+var totalTr = document.createElement('tr');
+totalTr.className = 'total';
+totalTr.innerHTML = '<td>TOTAL (Dear master)</td><td class="num">15,065.16</td><td class="num">5,755.57</td><td class="num">9,309.59</td>';
+tbody.appendChild(totalTr);
+var sorted = brands.filter(function(b) { return b.sale > 0; }).sort(function(a, b) { return b.sale - a.sale; });
+new Chart(document.getElementById('brandChart'), {
+type: 'bar',
+data: { labels: sorted.map(function(b){return b.name;}), datasets: [
+{ label: 'Sale', data: sorted.map(function(b){return b.sale;}), backgroundColor: '#2a78d6', borderRadius: 4 },
+{ label: 'COGS', data: sorted.map(function(b){return b.cogs;}), backgroundColor: '#eb6834', borderRadius: 4 },
+{ label: 'Profit', data: sorted.map(function(b){return b.profit;}), backgroundColor: '#1baf7a', borderRadius: 4 }
+] },
+options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+scales: { x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 }, grid: { display: false } },
+y: { grid: { color: '#e1e0d9' }, ticks: { callback: function(v){ return v.toLocaleString() + ' AED'; } } } } }
+});
+new Chart(document.getElementById('channelChart'), {
+type: 'bar',
+data: { labels: ['Online', 'In-store', 'Other'], datasets: [{ data: [3167, 160, 1869], backgroundColor: ['#2a78d6', '#1baf7a', '#898781'], borderRadius: 4 }] },
+options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+scales: { x: { grid: { color: '#e1e0d9' }, ticks: { callback: function(v){ return v.toLocaleString() + ' AED'; } } }, y: { grid: { display: false } } } }
+});
+</script>
+</body>
+</html>
