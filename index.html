@@ -2,121 +2,283 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Ventum House - Weekly Dashboard</title>
+<title>Ventum House - Sales Dashboard</title>
 <style>
-:root { --bg:#f7f6f3; --card:#fff; --border:#e1e0d9; --text:#0b0b0b; --text2:#52514e; --muted:#898781; --accent-bg:#E1F5EE; --accent-text:#085041; }
-* { box-sizing: border-box; }
-body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 2rem 1.5rem 4rem; }
-.wrap { max-width: 960px; margin: 0 auto; }
-h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-.sub { font-size: 14px; color: var(--text2); margin: 0 0 1rem; }
-.vat-note { font-size: 13px; color: var(--muted); background: var(--card); border: 0.5px solid var(--border); border-radius: 8px; padding: 8px 12px; margin: 0 0 1.5rem; display: inline-block; }
-.note { font-size: 13px; color: var(--muted); background: var(--card); border: 0.5px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 1.5rem; }
-.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
-.metric { background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem; }
-.metric .label { font-size: 13px; color: var(--text2); margin: 0 0 6px; }
-.metric .value { font-size: 24px; font-weight: 500; margin: 0; }
-.metric .value.pos { color: var(--accent-text); }
-section { background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; }
-h2 { font-size: 16px; font-weight: 500; margin: 0 0 1rem; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th, td { text-align: left; padding: 8px 6px; border-bottom: 0.5px solid var(--border); }
-th { color: var(--text2); font-weight: 500; }
-td.num, th.num { text-align: right; }
-tr.total td { font-weight: 500; border-top: 0.5px solid var(--border); }
-.chart-wrap { position: relative; width: 100%; height: 340px; }
-.badge { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 6px; background: var(--accent-bg); color: var(--accent-text); }
-.legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px; font-size: 12px; color: var(--text2); }
-.legend span.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --border: #e1e0d9;
+    --text: #0b0b0b; --text2: #52514e; --muted: #898781;
+    --accent: #1D9E75; --accent-bg: #E1F5EE; --accent-text: #085041;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    background: var(--bg); color: var(--text);
+    margin: 0; padding: 2rem 1.5rem 4rem;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+  .sub { font-size: 14px; color: var(--text2); margin: 0 0 1.5rem; }
+  .note { font-size: 13px; color: var(--muted); background: var(--card); border: 0.5px solid var(--border);
+          border-radius: 8px; padding: 10px 14px; margin-bottom: 1.5rem; }
+  .vat-note { font-size: 13px; color: var(--muted); background: var(--card); border: 0.5px solid var(--border);
+          border-radius: 8px; padding: 8px 12px; margin: 0 0 1.5rem; display: inline-block; }
+  .controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 1.5rem; }
+  .controls button, .controls select {
+    font-size: 13px; padding: 8px 14px; border-radius: 8px; border: 0.5px solid var(--border);
+    background: var(--card); color: var(--text); cursor: pointer;
+  }
+  .controls .hint { font-size: 12px; color: var(--muted); }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .metric { background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem; }
+  .metric .label { font-size: 13px; color: var(--text2); margin: 0 0 6px; }
+  .metric .value { font-size: 24px; font-weight: 500; margin: 0; }
+  section { background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; }
+  h2.section-title { font-size: 16px; font-weight: 500; margin: 0 0 1rem; }
+  h2.period-title { font-size: 18px; font-weight: 500; margin: 0 0 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 0.5px solid var(--border); }
+  th { color: var(--text2); font-weight: 500; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  tr.total td { font-weight: 500; border-top: 0.5px solid var(--border); }
+  .chart-wrap { position: relative; width: 100%; height: 320px; }
+  .chart-wrap.small { height: 160px; }
+  .badge { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 6px; background: var(--accent-bg); color: var(--accent-text); }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px; font-size: 12px; color: var(--text2); }
+  .legend span.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1>Ventum House - Weekly Report</h1>
-<p class="sub">Week of 03-09 Aug 2026. Dear is the only source (Shopify no longer used).</p>
-<p class="vat-note">All figures exclude VAT (as reported by Dear).</p>
-<div class="note">Static snapshot deployed from the Google Sheet. Redeploy this page whenever you want it refreshed.</div>
-<div class="metrics">
-<div class="metric"><p class="label">Total sales</p><p class="value">15,065 AED</p></div>
-<div class="metric"><p class="label">Total COGS</p><p class="value">5,756 AED</p></div>
-<div class="metric"><p class="label">Total profit</p><p class="value pos">9,310 AED</p></div>
-<div class="metric"><p class="label">Margin</p><p class="value">61.8%</p></div>
+  <h1>Ventum House - Sales Dashboard</h1>
+  <p class="sub">Dear is the only source (Shopify no longer used). Financial year: May-April.</p>
+  <p class="vat-note">All figures exclude VAT (as reported by Dear).</p>
+
+  <div class="controls">
+    <button id="vatBtn" type="button">Show sale incl. 5% VAT</button>
+    <span class="hint">Only affects Sale figures - COGS, profit and margin are unaffected by VAT.</span>
+  </div>
+
+  <div class="controls">
+    <label for="periodSelect" style="font-size:13px; color:var(--text2);">Period:</label>
+    <select id="periodSelect"></select>
+  </div>
+
+  <div id="periodContainer"></div>
+
+  <div class="note">Static snapshot built from the Dear export supplied on 12 Aug 2026. Redeploy this page with a fresh export to refresh a given month.</div>
 </div>
-<section>
-<h2>Revenue by brand (Dear - only source)</h2>
-<div class="legend"><span><span class="sw" style="background:#2a78d6"></span>Sale</span><span><span class="sw" style="background:#eb6834"></span>COGS</span><span><span class="sw" style="background:#1baf7a"></span>Profit</span></div>
-<div class="chart-wrap"><canvas id="brandChart" role="img" aria-label="Bar chart of sale, COGS and profit by brand"></canvas></div>
-</section>
-<section>
-<h2>Brand detail</h2>
-<table><thead><tr><th>Brand</th><th class="num">Sale (AED)</th><th class="num">COGS (AED)</th><th class="num">Profit (AED)</th><th class="num">Margin</th></tr></thead><tbody id="brandTable"></tbody></table>
-</section>
-<section>
-<h2>Online vs in-store split <span class="badge">Dear</span></h2>
-<p class="sub">Online = every Dear document number that includes a "Shipping - Free Shipping" line item. Everything else counts as in-store/other.</p>
-<div class="chart-wrap" style="height:160px;"><canvas id="channelChart" role="img" aria-label="Bar chart comparing online and in-store or other revenue"></canvas></div>
-<table style="margin-top:1rem;">
-<thead><tr><th>Document #</th><th>Customer</th><th class="num">Sale (AED)</th></tr></thead>
-<tbody>
-<tr><td>V-INV-03860, V-CR-00157</td><td>Rosanna Nocakovic</td><td class="num">1,780.00</td></tr>
-<tr><td>V-INV-03869</td><td>Sohom Bhattacharya</td><td class="num">1,075.24</td></tr>
-<tr><td>V-INV-03882</td><td>JOHN RHO</td><td class="num">152.38</td></tr>
-<tr class="total"><td colspan="2">Total online (20.0% of sale)</td><td class="num">3,007.62</td></tr>
-</tbody>
-</table>
-</section>
-</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-var brands = [
-{ name: 'VENTUM', sale: 843.15, cogs: 356.41, profit: 486.74 },
-{ name: 'ENVE', sale: 4424.14, cogs: 867.14, profit: 3557.00 },
-{ name: 'POC Sports', sale: 0, cogs: 0, profit: 0 },
-{ name: 'QUOC', sale: 1998.10, cogs: 881.01, profit: 1117.09 },
-{ name: 'VITTORIA', sale: 364.77, cogs: 182.86, profit: 181.91 },
-{ name: 'XLAB', sale: 1089.93, cogs: 617.57, profit: 472.36 },
-{ name: 'LEZYNE', sale: 422.86, cogs: 235.48, profit: 187.38 },
-{ name: 'OTE SPORTS', sale: 28.58, cogs: 0.02, profit: 28.56 },
-{ name: 'Chamois', sale: 169.52, cogs: 97.14, profit: 72.38 },
-{ name: 'Wyld', sale: 0, cogs: 399.00, profit: -399.00 },
-{ name: 'TACX', sale: 1075.24, cogs: 855.20, profit: 220.04 },
-{ name: 'Schwalbe', sale: 588.57, cogs: 401.70, profit: 186.87 },
-{ name: 'CONTINENTAL', sale: 446.67, cogs: 291.85, profit: 154.82 },
-{ name: 'SHIMANO', sale: 160.95, cogs: 85.90, profit: 75.06 },
-{ name: 'SwissStop', sale: 283.81, cogs: 0, profit: 283.81 },
-{ name: 'OAKLEY', sale: 759.33, cogs: 484.30, profit: 275.03 },
-{ name: 'SERVICE', sale: 2409.54, cogs: 0, profit: 2409.54 }
-];
-function fmt(n) { return (n < 0 ? '-' : '') + Math.abs(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
-function margin(sale, profit) { return sale ? (Math.round((profit / sale) * 1000) / 10) + '%' : '-'; }
-var tbody = document.getElementById('brandTable');
-brands.forEach(function(b) {
-var tr = document.createElement('tr');
-tr.innerHTML = '<td>' + b.name + '</td><td class="num">' + (b.sale ? fmt(b.sale) : '-') + '</td><td class="num">' + (b.cogs ? fmt(b.cogs) : '-') + '</td><td class="num">' + (b.profit ? fmt(b.profit) : '-') + '</td><td class="num">' + margin(b.sale, b.profit) + '</td>';
-tbody.appendChild(tr);
+const VAT_RATE = 1.05;
+const MONTHLY_DATA = {"May_2026": {"rowCount": 777, "brands": [{"name": "76 PROJECTS", "sale": 98.24, "cogs": 56.2, "profit": 42.04}, {"name": "BBB", "sale": 155.33, "cogs": 204.78, "profit": -49.45}, {"name": "CONTINENTAL", "sale": 3957.74, "cogs": 3694.6, "profit": 263.14}, {"name": "Chamois", "sale": 593.32, "cogs": 340.0, "profit": 253.32}, {"name": "ENVE", "sale": 164758.95, "cogs": 100734.06, "profit": 64024.89}, {"name": "FIZIK", "sale": 1818.91, "cogs": 1841.67, "profit": -22.76}, {"name": "FSA", "sale": 911.45, "cogs": 932.27, "profit": -20.82}, {"name": "Gym Sox", "sale": 100.0, "cogs": 0.02, "profit": 99.98}, {"name": "Humantra", "sale": 26.68, "cogs": 12.6, "profit": 14.08}, {"name": "IRC", "sale": 258.32, "cogs": 404.08, "profit": -145.76}, {"name": "ISM", "sale": 1784.91, "cogs": 3446.49, "profit": -1661.58}, {"name": "JAGWIRE", "sale": 0.4, "cogs": 1.38, "profit": -0.98}, {"name": "KBLE", "sale": 27.62, "cogs": 5.39, "profit": 22.23}, {"name": "LEZYNE", "sale": 399.05, "cogs": 227.43, "profit": 171.62}, {"name": "LOOK", "sale": 2561.01, "cogs": 1522.33, "profit": 1038.68}, {"name": "MERRELL", "sale": 694.29, "cogs": 143.27, "profit": 551.02}, {"name": "MSC", "sale": 3.72, "cogs": 7.84, "profit": -4.12}, {"name": "Muc-Off", "sale": 369.53, "cogs": 214.75, "profit": 154.78}, {"name": "NORDA", "sale": 627.62, "cogs": 143.06, "profit": 484.56}, {"name": "OAKLEY", "sale": 4253.91, "cogs": 2142.14, "profit": 2111.77}, {"name": "POC Sports", "sale": 9067.61, "cogs": 3463.61, "profit": 5604.0}, {"name": "POLISPORT", "sale": 233.35, "cogs": 22.23, "profit": 211.12}, {"name": "PROFILE DESIGN", "sale": 257.92, "cogs": 468.12, "profit": -210.2}, {"name": "QUOC", "sale": 2360.0, "cogs": 1142.65, "profit": 1217.35}, {"name": "RENTAL", "sale": 1833.81, "cogs": 0.0, "profit": 1833.81}, {"name": "RIDEREVER", "sale": 501.46, "cogs": 1118.4, "profit": -616.94}, {"name": "ROTOR", "sale": 474.8, "cogs": 1215.1, "profit": -740.3}, {"name": "SAPIENCE", "sale": 0.8, "cogs": 1.94, "profit": -1.14}, {"name": "SCOPE", "sale": 1962.42, "cogs": 5994.41, "profit": -4031.99}, {"name": "SERVICE", "sale": 19802.78, "cogs": 0.0, "profit": 19802.78}, {"name": "SHIMANO", "sale": 21691.84, "cogs": 40080.68, "profit": -18388.84}, {"name": "SRAM", "sale": 20959.13, "cogs": 28834.8, "profit": -7875.67}, {"name": "STYRKR", "sale": 1687.05, "cogs": 0.92, "profit": 1686.13}, {"name": "Schwalbe", "sale": 2503.04, "cogs": 1682.85, "profit": 820.19}, {"name": "SwissStop", "sale": 266.91, "cogs": 307.79, "profit": -40.88}, {"name": "TOLS", "sale": 1.4, "cogs": 2.94, "profit": -1.54}, {"name": "TRP", "sale": 1120.74, "cogs": 3031.97, "profit": -1911.23}, {"name": "Unknown", "sale": -9929.54, "cogs": 0.0, "profit": -9929.54}, {"name": "VENTUM", "sale": 47341.44, "cogs": 75421.37, "profit": -28079.93}, {"name": "VISION", "sale": 713.11, "cogs": 1611.67, "profit": -898.56}, {"name": "VITTORIA", "sale": 986.02, "cogs": 836.09, "profit": 149.93}, {"name": "WAHOO", "sale": 507.47, "cogs": 343.2, "profit": 164.27}, {"name": "Wyld", "sale": 2471.42, "cogs": 1635.0, "profit": 836.42}, {"name": "XLAB", "sale": 5669.7, "cogs": 1741.09, "profit": 3928.61}, {"name": "Zipp", "sale": 6439.14, "cogs": 3684.16, "profit": 2754.98}], "total": {"sale": 322324.82, "cogs": 288715.36, "profit": 33609.46}, "onlineSale": 14881.97, "otherSale": 307442.85, "onlineOrders": [{"doc": "V-INV-03257", "customer": "Marvin Andal", "sale": 4199.33}, {"doc": "V-INV-03243", "customer": "Ayman Sikafi", "sale": 1179.04}, {"doc": "V-INV-03277", "customer": "Harry Ross dreher", "sale": 632.67}, {"doc": "V-INV-03343", "customer": "Tanvir Haque", "sale": 571.42}, {"doc": "V-INV-03357", "customer": "Mark Malone", "sale": 571.42}, {"doc": "V-INV-03392", "customer": "Arda Korol", "sale": 571.42}, {"doc": "V-INV-03393", "customer": "Arnel Maravillas", "sale": 560.95}, {"doc": "V-INV-03353", "customer": "Imran Ghumra", "sale": 463.81}, {"doc": "V-INV-03229", "customer": "Jamie Ireland", "sale": 428.57}, {"doc": "V-INV-03230", "customer": "mike camahalan", "sale": 428.57}, {"doc": "V-INV-03241", "customer": "Milad Sangi", "sale": 428.57}, {"doc": "V-INV-03249", "customer": "Jaco Luijendijk", "sale": 428.57}, {"doc": "V-INV-03362", "customer": "Imran Ghumra", "sale": 428.57}, {"doc": "V-INV-03262", "customer": "khodor yassine", "sale": 414.29}, {"doc": "V-INV-03373", "customer": "Mark Malone", "sale": 402.86}, {"doc": "V-INV-03405", "customer": "JOHN RHO", "sale": 389.52}, {"doc": "V-INV-03364", "customer": "Tanvir Haque", "sale": 350.47}, {"doc": "V-INV-03208", "customer": "Chris Wood", "sale": 340.0}, {"doc": "V-INV-03326", "customer": "Chris Wood", "sale": 340.0}, {"doc": "V-INV-03331", "customer": "Sarah Barber", "sale": 340.0}, {"doc": "V-INV-03309", "customer": "Christopher Taylor", "sale": 299.05}, {"doc": "V-INV-03398", "customer": "Georgina Bishop", "sale": 237.15}, {"doc": "V-INV-03363", "customer": "Chris Wood", "sale": 226.67}, {"doc": "V-INV-03231", "customer": "Claudia Maestre Santa", "sale": 200.0}, {"doc": "V-INV-03301", "customer": "Joe Joe", "sale": 150.0}, {"doc": "V-INV-03219", "customer": "Dante Noche", "sale": 123.81}, {"doc": "V-INV-03384", "customer": "JOHN RHO", "sale": 119.05}, {"doc": "V-INV-03361", "customer": "Evirgen Ulas", "sale": 56.19}], "docCount": 209}, "Jun_2026": {"rowCount": 439, "brands": [{"name": "BBB", "sale": 495.34, "cogs": 262.4, "profit": 232.94}, {"name": "CONTINENTAL", "sale": 1252.32, "cogs": 991.9, "profit": 260.42}, {"name": "Chamois", "sale": 423.8, "cogs": 242.86, "profit": 180.94}, {"name": "DT SWISS", "sale": 188.58, "cogs": 138.6, "profit": 49.98}, {"name": "ENVE", "sale": 185516.66, "cogs": 81409.63, "profit": 104107.03}, {"name": "FIZIK", "sale": 1325.27, "cogs": 855.0, "profit": 470.27}, {"name": "FSA", "sale": 128.25, "cogs": 89.76, "profit": 38.49}, {"name": "Gym Sox", "sale": 50.0, "cogs": 0.01, "profit": 49.99}, {"name": "Humantra", "sale": 230.48, "cogs": 132.3, "profit": 98.18}, {"name": "LOOK", "sale": 1281.95, "cogs": 735.62, "profit": 546.33}, {"name": "Maurten", "sale": 296.19, "cogs": 185.43, "profit": 110.76}, {"name": "Muc-Off", "sale": 697.13, "cogs": 421.75, "profit": 275.38}, {"name": "OAKLEY", "sale": 903.81, "cogs": 404.85, "profit": 498.96}, {"name": "OTE SPORTS", "sale": 85.72, "cogs": 0.05, "profit": 85.67}, {"name": "POC Sports", "sale": 4304.17, "cogs": 2181.67, "profit": 2122.5}, {"name": "POLISPORT", "sale": 14.2, "cogs": 19.05, "profit": -4.85}, {"name": "QUOC", "sale": 11160.04, "cogs": 5197.51, "profit": 5962.53}, {"name": "RENTAL", "sale": 795.72, "cogs": 0.0, "profit": 795.72}, {"name": "ROTOR", "sale": 318.01, "cogs": 265.63, "profit": 52.38}, {"name": "SERVICE", "sale": 16824.89, "cogs": 0.0, "profit": 16824.89}, {"name": "SHIMANO", "sale": 19759.22, "cogs": 18052.77, "profit": 1706.45}, {"name": "SRAM", "sale": 10050.98, "cogs": 4496.29, "profit": 5554.69}, {"name": "STYRKR", "sale": 982.13, "cogs": 22.57, "profit": 959.56}, {"name": "SUPACAZ", "sale": 160.95, "cogs": 117.86, "profit": 43.09}, {"name": "Schwalbe", "sale": 338.88, "cogs": 251.55, "profit": 87.33}, {"name": "SwissStop", "sale": 141.9, "cogs": 69.5, "profit": 72.4}, {"name": "TRI-FIT", "sale": 999.05, "cogs": 470.58, "profit": 528.47}, {"name": "Unknown", "sale": -12427.19, "cogs": 0.0, "profit": -12427.19}, {"name": "VENTUM", "sale": 23204.5, "cogs": 13495.61, "profit": 9708.89}, {"name": "VITTORIA", "sale": 1919.85, "cogs": 1150.26, "profit": 769.59}, {"name": "WAHOO", "sale": 341.14, "cogs": 234.0, "profit": 107.14}, {"name": "Wyld", "sale": 3216.13, "cogs": 2592.0, "profit": 624.13}, {"name": "XLAB", "sale": 3801.9, "cogs": 1181.15, "profit": 2620.75}], "total": {"sale": 278781.97, "cogs": 135668.16, "profit": 143113.81}, "onlineSale": 12443.36, "otherSale": 266338.61, "onlineOrders": [{"doc": "V-INV-03512", "customer": "Saud Kajoor", "sale": 3999.33}, {"doc": "V-INV-03484", "customer": "RASHID ALTAYER", "sale": 932.67}, {"doc": "V-INV-03639", "customer": "Sofia Brontvein", "sale": 932.67}, {"doc": "V-INV-03586", "customer": "Fahd Mukhtar", "sale": 732.38}, {"doc": "V-INV-03554", "customer": "alberto Canteli suarez", "sale": 569.52}, {"doc": "V-INV-03630", "customer": "Richard Farren", "sale": 566.66}, {"doc": "V-INV-03592", "customer": "Jacob Potma", "sale": 475.24}, {"doc": "V-INV-03664", "customer": "Kiran kang", "sale": 433.34}, {"doc": "V-INV-03467", "customer": "Thea Kearse", "sale": 428.57}, {"doc": "V-INV-03632", "customer": "james brodie", "sale": 391.43}, {"doc": "V-INV-03641", "customer": "Richard Farren", "sale": 316.29}, {"doc": "V-INV-03449", "customer": "John Barrowman", "sale": 261.91}, {"doc": "V-INV-03669", "customer": "YURI KOVELEV", "sale": 261.91}, {"doc": "V-INV-03523", "customer": "Christian irce", "sale": 228.57}, {"doc": "V-INV-03569", "customer": "james brodie", "sale": 228.57}, {"doc": "V-INV-03579", "customer": "Christopher Van der walt", "sale": 228.57}, {"doc": "V-INV-03431", "customer": "Richard Farren", "sale": 210.0}, {"doc": "V-INV-03666", "customer": "Richard Farren", "sale": 208.57}, {"doc": "V-INV-03440", "customer": "Peter Reid", "sale": 200.0}, {"doc": "V-INV-03448", "customer": "khodor yassine", "sale": 190.48}, {"doc": "V-INV-03627", "customer": "Christopher Taylor", "sale": 165.72}, {"doc": "V-INV-03456", "customer": "Imran Ghumra", "sale": 152.38}, {"doc": "V-INV-03648", "customer": "Cihan Boztarla", "sale": 123.81}, {"doc": "V-INV-03433", "customer": "Olga Poninova", "sale": 71.43}, {"doc": "V-INV-03481", "customer": "JOHN RHO", "sale": 71.43}, {"doc": "V-INV-03502", "customer": "Ryan Christian", "sale": 61.91}, {"doc": "V-INV-03593, V-CR-00149", "customer": "Brandi Gribbin", "sale": 0.0}], "docCount": 222}, "Jul_2026": {"rowCount": 385, "brands": [{"name": "Chamois", "sale": 169.52, "cogs": 97.14, "profit": 72.38}, {"name": "DT SWISS", "sale": 188.57, "cogs": 138.6, "profit": 49.97}, {"name": "ENVE", "sale": 99585.34, "cogs": 44413.21, "profit": 55172.13}, {"name": "FIZIK", "sale": 2620.44, "cogs": 1908.6, "profit": 711.84}, {"name": "FSA", "sale": 1768.89, "cogs": 1632.35, "profit": 136.54}, {"name": "Gym Sox", "sale": 250.0, "cogs": 0.05, "profit": 249.95}, {"name": "Humantra", "sale": 346.67, "cogs": 192.15, "profit": 154.52}, {"name": "IRC", "sale": 448.09, "cogs": 538.9, "profit": -90.81}, {"name": "ISM", "sale": 394.04, "cogs": 359.4, "profit": 34.64}, {"name": "KBLE", "sale": 27.62, "cogs": 5.39, "profit": 22.23}, {"name": "LEZYNE", "sale": 23.81, "cogs": 8.05, "profit": 15.76}, {"name": "LOOK", "sale": 339.04, "cogs": 161.91, "profit": 177.13}, {"name": "Maurten", "sale": 312.38, "cogs": 196.8, "profit": 115.58}, {"name": "Muc-Off", "sale": 320.95, "cogs": 170.5, "profit": 150.45}, {"name": "NORDA", "sale": 1332.38, "cogs": 366.43, "profit": 965.95}, {"name": "OAKLEY", "sale": 824.49, "cogs": 385.94, "profit": 438.55}, {"name": "OTE SPORTS", "sale": 600.16, "cogs": 0.4, "profit": 599.76}, {"name": "OTHER", "sale": 171.43, "cogs": 83.3, "profit": 88.13}, {"name": "POC Sports", "sale": 2586.77, "cogs": 1428.86, "profit": 1157.91}, {"name": "POLISPORT", "sale": 249.45, "cogs": 25.41, "profit": 224.04}, {"name": "QUOC", "sale": 10774.29, "cogs": 4755.9, "profit": 6018.39}, {"name": "RENTAL", "sale": 3391.43, "cogs": 0.0, "profit": 3391.43}, {"name": "RIDEREVER", "sale": 1225.91, "cogs": 1118.4, "profit": 107.51}, {"name": "ROTOR", "sale": 173.82, "cogs": 158.49, "profit": 15.33}, {"name": "SERVICE", "sale": 12904.59, "cogs": 0.0, "profit": 12904.59}, {"name": "SHIMANO", "sale": 8238.08, "cogs": 6379.22, "profit": 1858.86}, {"name": "SRAM", "sale": 26382.51, "cogs": 20906.19, "profit": 5476.32}, {"name": "STYRKR", "sale": 166.94, "cogs": 0.11, "profit": 166.83}, {"name": "SUPACAZ", "sale": 321.9, "cogs": 235.71, "profit": 86.19}, {"name": "Schwalbe", "sale": 734.71, "cogs": 602.55, "profit": 132.16}, {"name": "Unknown", "sale": -5824.5, "cogs": 0.0, "profit": -5824.5}, {"name": "VENTUM", "sale": 58680.21, "cogs": 39678.85, "profit": 19001.36}, {"name": "VISION", "sale": 525.55, "cogs": 973.48, "profit": -447.93}, {"name": "VITTORIA", "sale": 1006.44, "cogs": 586.18, "profit": 420.26}, {"name": "Wyld", "sale": 580.0, "cogs": 399.0, "profit": 181.0}, {"name": "XLAB", "sale": 2158.27, "cogs": 658.33, "profit": 1499.94}, {"name": "Zipp", "sale": 5791.41, "cogs": 2203.28, "profit": 3588.13}], "total": {"sale": 239791.6, "cogs": 130769.07, "profit": 109022.53}, "onlineSale": 8325.05, "otherSale": 231466.55, "onlineOrders": [{"doc": "V-INV-03766", "customer": "Sami Nasr", "sale": 1332.38}, {"doc": "V-INV-03720", "customer": "Brenden King", "sale": 1320.0}, {"doc": "V-INV-03699", "customer": "RASHID ALTAYER", "sale": 932.67}, {"doc": "V-INV-03691", "customer": "Jagjit Mahal", "sale": 619.05}, {"doc": "V-INV-03759", "customer": "Marcel Chomic", "sale": 491.43}, {"doc": "V-INV-03710", "customer": "Ahmad karaky", "sale": 475.24}, {"doc": "V-INV-03804", "customer": "Brenden King", "sale": 453.33}, {"doc": "V-INV-03775", "customer": "Mona lastname", "sale": 389.52}, {"doc": "V-INV-03724", "customer": "Tanvir Haque", "sale": 332.38}, {"doc": "V-INV-03762", "customer": "Chris Putney", "sale": 300.0}, {"doc": "V-INV-03839", "customer": "Tom Ronnfeldt", "sale": 285.71}, {"doc": "V-INV-03799", "customer": "Sonny lastname", "sale": 226.67}, {"doc": "V-INV-03723", "customer": "Calum Park", "sale": 200.0}, {"doc": "V-INV-03735", "customer": "Marcel Chomic", "sale": 200.0}, {"doc": "V-INV-03834", "customer": "Fabian Wachsmuth", "sale": 200.0}, {"doc": "V-INV-03703", "customer": "JOHN RHO", "sale": 152.38}, {"doc": "V-INV-03816", "customer": "JOHN RHO", "sale": 152.38}, {"doc": "V-INV-03695", "customer": "JOHN RHO", "sale": 119.05}, {"doc": "V-INV-03753", "customer": "JOHN RHO", "sale": 71.43}, {"doc": "V-INV-03805", "customer": "Jonh Last Name", "sale": 71.43}], "docCount": 139}, "Aug_2026": {"rowCount": 74, "brands": [{"name": "CONTINENTAL", "sale": 446.67, "cogs": 291.85, "profit": 154.82}, {"name": "Chamois", "sale": 169.52, "cogs": 97.14, "profit": 72.38}, {"name": "ENVE", "sale": 14600.23, "cogs": 7544.42, "profit": 7055.81}, {"name": "FIZIK", "sale": 542.03, "cogs": 285.0, "profit": 257.03}, {"name": "FSA", "sale": 142.27, "cogs": 89.76, "profit": 52.51}, {"name": "LEZYNE", "sale": 422.86, "cogs": 235.48, "profit": 187.38}, {"name": "OAKLEY", "sale": 2465.08, "cogs": 2275.34, "profit": 189.74}, {"name": "OTE SPORTS", "sale": 100.01, "cogs": 0.06, "profit": 99.95}, {"name": "QUOC", "sale": 1998.1, "cogs": 881.01, "profit": 1117.09}, {"name": "SERVICE", "sale": 3568.59, "cogs": 0.0, "profit": 3568.59}, {"name": "SHIMANO", "sale": 370.47, "cogs": 146.84, "profit": 223.63}, {"name": "SRAM", "sale": 8551.32, "cogs": 4496.29, "profit": 4055.03}, {"name": "Schwalbe", "sale": 588.57, "cogs": 401.7, "profit": 186.87}, {"name": "SwissStop", "sale": 283.81, "cogs": 0.0, "profit": 283.81}, {"name": "TACX", "sale": 1075.24, "cogs": 855.2, "profit": 220.04}, {"name": "Unknown", "sale": -94.85, "cogs": 0.0, "profit": -94.85}, {"name": "VENTUM", "sale": 8653.29, "cogs": 4445.13, "profit": 4208.16}, {"name": "VITTORIA", "sale": 420.96, "cogs": 208.57, "profit": 212.39}, {"name": "Wyld", "sale": 0.01, "cogs": 399.0, "profit": -398.99}, {"name": "XLAB", "sale": 664.76, "cogs": 178.96, "profit": 485.8}], "total": {"sale": 44968.94, "cogs": 22831.76, "profit": 22137.18}, "onlineSale": 3007.62, "otherSale": 41961.32, "onlineOrders": [{"doc": "V-INV-03860, V-CR-00157", "customer": "Rosanna Nocakovic", "sale": 1780.0}, {"doc": "V-INV-03869", "customer": "Sohom Bhattacharya", "sale": 1075.24}, {"doc": "V-INV-03882", "customer": "JOHN RHO", "sale": 152.38}], "docCount": 38}};
+const MONTHLY_ORDER = ['May_2026', 'Jun_2026', 'Jul_2026', 'Aug_2026'];
+const MONTHLY_LABELS = {
+  May_2026: 'May 2026',
+  Jun_2026: 'June 2026',
+  Jul_2026: 'July 2026',
+  Aug_2026: 'August 2026 (to 09 Aug)'
+};
+
+let vatOn = false;
+let currentPeriodKey = 'Aug_2026';
+const saleTextRegistry = [];
+let activeCharts = [];
+
+const fmt = (n) => {
+  if (n === null || n === undefined) return '-';
+  const num = Number(n);
+  if (Number.isNaN(num)) return '-';
+  return (num < 0 ? '-' : '') + Math.abs(num).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+};
+
+function saleSpan(baseValue, suffix) {
+  const span = document.createElement('span');
+  span.textContent = (baseValue === 0 ? '-' : fmt(baseValue) + (suffix || ''));
+  if (baseValue) saleTextRegistry.push({ el: span, base: baseValue, suffix: suffix || '' });
+  return span;
+}
+
+function applyVAT() {
+  saleTextRegistry.forEach(({ el, base, suffix }) => {
+    const v = vatOn ? base * VAT_RATE : base;
+    el.textContent = fmt(v) + suffix;
+  });
+  activeCharts.forEach(({ chart, datasetIndexes, baseRows }) => {
+    datasetIndexes.forEach((di, idx) => {
+      chart.data.datasets[di].data = baseRows[idx].map(v => vatOn ? v * VAT_RATE : v);
+    });
+    chart.update();
+  });
+}
+
+document.getElementById('vatBtn').addEventListener('click', function () {
+  vatOn = !vatOn;
+  this.textContent = vatOn ? 'Show sale excl. VAT' : 'Show sale incl. 5% VAT';
+  this.style.background = vatOn ? '#E1F5EE' : '#fff';
+  this.style.color = vatOn ? '#085041' : '#0b0b0b';
+  applyVAT();
 });
-var totalTr = document.createElement('tr');
-totalTr.className = 'total';
-totalTr.innerHTML = '<td>TOTAL (Dear)</td><td class="num">15,065.16</td><td class="num">5,755.57</td><td class="num">9,309.59</td><td class="num">' + margin(15065.16, 9309.59) + '</td>';
-tbody.appendChild(totalTr);
-var sorted = brands.filter(function(b) { return b.sale > 0; }).sort(function(a, b) { return b.sale - a.sale; });
-new Chart(document.getElementById('brandChart'), {
-type: 'bar',
-data: { labels: sorted.map(function(b){return b.name;}), datasets: [
-{ label: 'Sale', data: sorted.map(function(b){return b.sale;}), backgroundColor: '#2a78d6', borderRadius: 4 },
-{ label: 'COGS', data: sorted.map(function(b){return b.cogs;}), backgroundColor: '#eb6834', borderRadius: 4 },
-{ label: 'Profit', data: sorted.map(function(b){return b.profit;}), backgroundColor: '#1baf7a', borderRadius: 4 }
-] },
-options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-scales: { x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 }, grid: { display: false } },
-y: { grid: { color: '#e1e0d9' }, ticks: { callback: function(v){ return v.toLocaleString() + ' AED'; } } } } }
+
+const select = document.getElementById('periodSelect');
+MONTHLY_ORDER.filter(k => MONTHLY_DATA[k]).forEach(k => {
+  const opt = document.createElement('option');
+  opt.value = k;
+  opt.textContent = MONTHLY_LABELS[k];
+  select.appendChild(opt);
 });
-new Chart(document.getElementById('channelChart'), {
-type: 'bar',
-data: { labels: ['Online', 'In-store / other'], datasets: [{ data: [3007.62, 12057.54], backgroundColor: ['#2a78d6', '#898781'], borderRadius: 4 }] },
-options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-scales: { x: { grid: { color: '#e1e0d9' }, ticks: { callback: function(v){ return v.toLocaleString() + ' AED'; } } }, y: { grid: { display: false } } } }
+select.value = currentPeriodKey;
+select.addEventListener('change', () => {
+  currentPeriodKey = select.value;
+  renderCurrentPeriod();
 });
+
+function renderMetrics(container, m) {
+  const wrap = document.createElement('div');
+  wrap.className = 'metrics';
+  const makeCard = (label, valueEl) => {
+    const c = document.createElement('div');
+    c.className = 'metric';
+    const p1 = document.createElement('p'); p1.className = 'label'; p1.textContent = label;
+    const p2 = document.createElement('p'); p2.className = 'value'; p2.appendChild(valueEl);
+    c.appendChild(p1); c.appendChild(p2);
+    wrap.appendChild(c);
+  };
+  makeCard('Total sale', saleSpan(m.sale, ' AED'));
+  const cogsVal = document.createElement('span'); cogsVal.textContent = fmt(m.cogs) + ' AED';
+  makeCard('Total COGS', cogsVal);
+  const profitVal = document.createElement('span'); profitVal.textContent = fmt(m.profit) + ' AED';
+  makeCard('Total profit', profitVal);
+  const marginVal = document.createElement('span'); marginVal.textContent = (m.sale ? ((m.profit / m.sale) * 100).toFixed(1) : '0') + '%';
+  makeCard('Margin', marginVal);
+  container.appendChild(wrap);
+}
+
+function renderBrandSection(container, brands, total, chartId) {
+  const section = document.createElement('section');
+  section.innerHTML = `<h2 class="section-title">Revenue by brand (Dear - only source)</h2>
+    <div class="legend">
+      <span><span class="sw" style="background:#2a78d6"></span>Sale</span>
+      <span><span class="sw" style="background:#eb6834"></span>COGS</span>
+      <span><span class="sw" style="background:#1baf7a"></span>Profit</span>
+    </div>
+    <div class="chart-wrap"><canvas id="${chartId}" role="img" aria-label="Bar chart of sale, COGS and profit by brand"></canvas></div>
+    <table>
+      <thead><tr><th>Brand</th><th class="num">Sale</th><th class="num">COGS</th><th class="num">Profit</th><th class="num">Margin</th></tr></thead>
+      <tbody></tbody>
+    </table>`;
+  container.appendChild(section);
+  const tbody = section.querySelector('tbody');
+  const margin = (sale, profit) => (sale ? ((profit / sale) * 100).toFixed(1) + '%' : '-');
+
+  const addRow = (name, b, isTotal) => {
+    const tr = document.createElement('tr');
+    if (isTotal) tr.className = 'total';
+    const tdName = document.createElement('td'); tdName.textContent = name;
+    const tdSale = document.createElement('td'); tdSale.className = 'num'; tdSale.appendChild(saleSpan(b.sale, ''));
+    const tdCogs = document.createElement('td'); tdCogs.className = 'num'; tdCogs.textContent = b.cogs ? fmt(b.cogs) : '-';
+    const tdProfit = document.createElement('td'); tdProfit.className = 'num'; tdProfit.textContent = b.profit ? fmt(b.profit) : '-';
+    const tdMargin = document.createElement('td'); tdMargin.className = 'num'; tdMargin.textContent = margin(b.sale, b.profit);
+    tr.appendChild(tdName); tr.appendChild(tdSale); tr.appendChild(tdCogs); tr.appendChild(tdProfit); tr.appendChild(tdMargin);
+    tbody.appendChild(tr);
+  };
+
+  brands.forEach(b => addRow(b.name, b, false));
+  addRow('TOTAL (Dear)', total, true);
+
+  const sorted = [...brands].filter(b => b.sale > 0).sort((a, b) => b.sale - a.sale);
+  const chart = new Chart(document.getElementById(chartId), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(b => b.name),
+      datasets: [
+        { label: 'Sale', data: sorted.map(b => b.sale), backgroundColor: '#2a78d6', borderRadius: 4 },
+        { label: 'COGS', data: sorted.map(b => b.cogs), backgroundColor: '#eb6834', borderRadius: 4 },
+        { label: 'Profit', data: sorted.map(b => b.profit), backgroundColor: '#1baf7a', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 }, grid: { display: false } },
+        y: { grid: { color: '#e1e0d9' }, ticks: { callback: (v) => v.toLocaleString() + ' AED' } }
+      }
+    }
+  });
+  activeCharts.push({ chart, datasetIndexes: [0], baseRows: [sorted.map(b => b.sale)] });
+}
+
+function renderChannelSection(container, summary, totalSale, chartId) {
+  const { onlineSale, otherSale, onlineOrders } = summary;
+  const section = document.createElement('section');
+  const onlinePct = totalSale ? ((onlineSale / totalSale) * 100).toFixed(1) : '0';
+  section.innerHTML = `<h2 class="section-title">Online vs in-store split <span class="badge">Dear</span></h2>
+    <p class="sub" style="margin-bottom:1rem;">Online = every Dear document number that includes a "Shipping - Free Shipping" line. Everything else counts as in-store/other.</p>
+    <div class="chart-wrap small"><canvas id="${chartId}" role="img" aria-label="Bar chart comparing online and in-store or other revenue"></canvas></div>
+    <table style="margin-top:1rem;">
+      <thead><tr><th>Document #</th><th>Customer</th><th class="num">Sale (AED)</th></tr></thead>
+      <tbody></tbody>
+    </table>`;
+  container.appendChild(section);
+  const tbody = section.querySelector('tbody');
+  (onlineOrders.length ? onlineOrders : [{doc: 'None this period', customer: '', sale: 0}]).forEach(o => {
+    const tr = document.createElement('tr');
+    const tdDoc = document.createElement('td'); tdDoc.textContent = o.doc;
+    const tdCust = document.createElement('td'); tdCust.textContent = o.customer;
+    const tdSale = document.createElement('td'); tdSale.className = 'num'; tdSale.appendChild(saleSpan(o.sale, ''));
+    tr.appendChild(tdDoc); tr.appendChild(tdCust); tr.appendChild(tdSale);
+    tbody.appendChild(tr);
+  });
+  const totalTr = document.createElement('tr'); totalTr.className = 'total';
+  const tdLabel = document.createElement('td'); tdLabel.colSpan = 2; tdLabel.textContent = `Total online (${onlinePct}% of sale)`;
+  const tdTotal = document.createElement('td'); tdTotal.className = 'num'; tdTotal.appendChild(saleSpan(onlineSale, ''));
+  totalTr.appendChild(tdLabel); totalTr.appendChild(tdTotal);
+  tbody.appendChild(totalTr);
+
+  const chart = new Chart(document.getElementById(chartId), {
+    type: 'bar',
+    data: {
+      labels: ['Online', 'In-store / other'],
+      datasets: [{ data: [onlineSale, otherSale], backgroundColor: ['#2a78d6', '#898781'], borderRadius: 4 }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#e1e0d9' }, ticks: { callback: (v) => v.toLocaleString() + ' AED' } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+  activeCharts.push({ chart, datasetIndexes: [0], baseRows: [[onlineSale, otherSale]] });
+}
+
+function renderCurrentPeriod() {
+  const periodContainer = document.getElementById('periodContainer');
+  activeCharts.forEach(({ chart }) => chart.destroy());
+  activeCharts = [];
+  saleTextRegistry.length = 0;
+  periodContainer.innerHTML = '';
+
+  const snap = MONTHLY_DATA[currentPeriodKey];
+  if (!snap) { periodContainer.textContent = 'No data for this period.'; return; }
+
+  const h = document.createElement('h2');
+  h.className = 'period-title';
+  h.textContent = MONTHLY_LABELS[currentPeriodKey] || currentPeriodKey;
+  periodContainer.appendChild(h);
+
+  renderMetrics(periodContainer, snap.total);
+  renderBrandSection(periodContainer, snap.brands, snap.total, 'chart-brand');
+  renderChannelSection(periodContainer, { onlineSale: snap.onlineSale, otherSale: snap.otherSale, onlineOrders: snap.onlineOrders }, snap.total.sale, 'chart-channel');
+
+  applyVAT();
+}
+
+renderCurrentPeriod();
 </script>
 </body>
 </html>
