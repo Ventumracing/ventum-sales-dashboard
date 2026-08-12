@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ventum House - Sales Dashboard</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --border: #e1e0d9;
+    --text: #0b0b0b; --text2: #52514e; --muted: #898781;
+    --accent: #1D9E75; --accent-bg: #E1F5EE; --accent-text: #085041;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    background: var(--bg); color: var(--text);
+    margin: 0; padding: 2rem 1.5rem 4rem;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+  .sub { font-size: 14px; color: var(--text2); margin: 0 0 1.5rem; }
+  .note { font-size: 13px; color: var(--muted); background: var(--card); border: 0.5px solid var(--border);
+          border-radius: 8px; padding: 10px 14px; margin-bottom: 1.5rem; }
+  .vat-note { font-size: 13px; color: var(--muted); background: var(--card); border: 0.5px solid var(--border);
+          border-radius: 8px; padding: 8px 12px; margin: 0 0 1.5rem; display: inline-block; }
+  .controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 1.5rem; }
+  .controls button, .controls select {
+    font-size: 13px; padding: 8px 14px; border-radius: 8px; border: 0.5px solid var(--border);
+    background: var(--card); color: var(--text); cursor: pointer;
+  }
+  .controls .hint { font-size: 12px; color: var(--muted); }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .metric { background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem; }
+  .metric .label { font-size: 13px; color: var(--text2); margin: 0 0 6px; }
+  .metric .value { font-size: 24px; font-weight: 500; margin: 0; }
+  section { background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; }
+  h2.section-title { font-size: 16px; font-weight: 500; margin: 0 0 1rem; }
+  h2.period-title { font-size: 18px; font-weight: 500; margin: 0 0 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 0.5px solid var(--border); }
+  th { color: var(--text2); font-weight: 500; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  tr.total td { font-weight: 500; border-top: 0.5px solid var(--border); }
+  .chart-wrap { position: relative; width: 100%; height: 320px; }
+  .chart-wrap.small { height: 160px; }
+  .badge { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 6px; background: var(--accent-bg); color: var(--accent-text); }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px; font-size: 12px; color: var(--text2); }
+  .legend span.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Ventum House - Sales Dashboard</h1>
+  <p class="sub">Dear is the only source (Shopify no longer used). Financial year: May-April.</p>
+  <p class="vat-note">All figures exclude VAT (as reported by Dear).</p>
+  <p class="vat-note">Full bike builds: any Document # with a Ventum frame/fork (TT, One, NS1, GS1, Tempus) has every component in that build (groupset, wheels, cockpit, labor, etc.) counted under VENTUM, not the component's own brand.</p>
+
+  <div class="controls">
+    <button id="vatBtn" type="button">Show sale incl. 5% VAT</button>
+    <span class="hint">Only affects Sale figures - COGS, profit and margin are unaffected by VAT.</span>
+  </div>
+
+  <div class="controls">
+    <label for="periodSelect" style="font-size:13px; color:var(--text2);">Period:</label>
+    <select id="periodSelect"></select>
+  </div>
+
+  <div id="periodContainer"></div>
+
+  <div class="note">Static snapshot built from the Dear export supplied on 12 Aug 2026. Redeploy this page with a fresh export to refresh a given month.</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const VAT_RATE = 1.05;
+const MONTHLY_DATA = {
+"May_2026":{
+"rowCount":777,
+"brands":[
+{"name":"CONTINENTAL","sale":3382.86,"cogs":2191.8,"profit":1191.06},
+{"name":"Chamois","sale":593.32,"cogs":340.0,"profit":253.32},
+{"name":"ENVE","sale":148131.4,"cogs":67566.81,"profit":80564.59},
+{"name":"FIZIK","sale":1389.52,"cogs":1044.58,"profit":344.94},
+{"name":"FSA","sale":401.29,"cogs":269.29,"profit":132.0},
+{"name":"Gym Sox","sale":100.0,"cogs":0.02,"profit":99.98},
+{"name":"Humantra","sale":26.68,"cogs":12.6,"profit":14.08},
+{"name":"KBLE","sale":27.62,"cogs":5.39,"profit":22.23},
+{"name":"LEZYNE","sale":399.05,"cogs":227.43,"profit":171.62},
+{"name":"LOOK","sale":2146.67,"cogs":1203.47,"profit":943.2},
+{"name":"MERRELL","sale":694.29,"cogs":143.27,"profit":551.02},
+{"name":"Muc-Off","sale":369.53,"cogs":214.75,"profit":154.78},
+{"name":"NORDA","sale":627.62,"cogs":143.06,"profit":484.56},
+{"name":"OAKLEY","sale":4253.91,"cogs":2142.14,"profit":2111.77},
+{"name":"POC Sports","sale":9067.61,"cogs":3463.61,"profit":5604.0},
+{"name":"POLISPORT","sale":233.35,"cogs":22.23,"profit":211.12},
+{"name":"QUOC","sale":2360.0,"cogs":1142.65,"profit":1217.35},
+{"name":"RENTAL","sale":1833.81,"cogs":0.0,"profit":1833.81},
+{"name":"SERVICE","sale":17326.54,"cogs":0.0,"profit":17326.54},
+{"name":"SHIMANO","sale":8189.52,"cogs":3714.18,"profit":4475.34},
+{"name":"SRAM","sale":2023.52,"cogs":1129.2,"profit":894.32},
+{"name":"STYRKR","sale":1687.05,"cogs":0.92,"profit":1686.13},
+{"name":"Schwalbe","sale":1800.95,"cogs":1281.15,"profit":519.8},
+{"name":"SwissStop","sale":141.9,"cogs":69.5,"profit":72.4},
+{"name":"Unknown","sale":-9929.54,"cogs":0.0,"profit":-9929.54},
+{"name":"VENTUM","sale":115643.53,"cogs":198236.24,"profit":-82592.71},
+{"name":"VITTORIA","sale":811.85,"cogs":452.39,"profit":359.46},
+{"name":"WAHOO","sale":507.47,"cogs":343.2,"profit":164.27},
+{"name":"Wyld","sale":2471.42,"cogs":1635.0,"profit":836.42},
+{"name":"XLAB","sale":5612.08,"cogs":1720.48,"profit":3891.6}
+],
+"total":{"sale":322324.82,"cogs":288715.36,"profit":33609.46},
+"onlineSale":14881.97,
+"otherSale":307442.85,
+"onlineOrders":[
+{"doc":"V-INV-03257","customer":"Marvin Andal","sale":4199.33},
+{"doc":"V-INV-03243","customer":"Ayman Sikafi","sale":1179.04},
+{"doc":"V-INV-03277","customer":"Harry Ross dreher","sale":632.67},
+{"doc":"V-INV-03343","customer":"Tanvir Haque","sale":571.42},
+{"doc":"V-INV-03357","customer":"Mark Malone","sale":571.42},
+{"doc":"V-INV-03392","customer":"Arda Korol","sale":571.42},
+{"doc":"V-INV-03393","customer":"Arnel Maravillas","sale":560.95},
+{"doc":"V-INV-03353","customer":"Imran Ghumra","sale":463.81},
+{"doc":"V-INV-03249","customer":"Jaco Luijendijk","sale":428.57},
+{"doc":"V-INV-03230","customer":"mike camahalan","sale":428.57},
+{"doc":"V-INV-03362","customer":"Imran Ghumra","sale":428.57},
+{"doc":"V-INV-03229","customer":"Jamie Ireland","sale":428.57},
+{"doc":"V-INV-03241","customer":"Milad Sangi","sale":428.57},
+{"doc":"V-INV-03262","customer":"khodor yassine","sale":414.29},
+{"doc":"V-INV-03373","customer":"Mark Malone","sale":402.86},
+{"doc":"V-INV-03405","customer":"JOHN RHO","sale":389.52},
+{"doc":"V-INV-03364","customer":"Tanvir Haque","sale":350.47},
+{"doc":"V-INV-03208","customer":"Chris Wood","sale":340.0},
+{"doc":"V-INV-03326","customer":"Chris Wood","sale":340.0},
+{"doc":"V-INV-03331","customer":"Sarah Barber","sale":340.0},
+{"doc":"V-INV-03309","customer":"Christopher Taylor","sale":299.05},
+{"doc":"V-INV-03398","customer":"Georgina Bishop","sale":237.15},
+{"doc":"V-INV-03363","customer":"Chris Wood","sale":226.67},
+{"doc":"V-INV-03231","customer":"Claudia Maestre Santa","sale":200.0},
+{"doc":"V-INV-03301","customer":"Joe Joe","sale":150.0},
+{"doc":"V-INV-03219","customer":"Dante Noche","sale":123.81},
+{"doc":"V-INV-03384","customer":"JOHN RHO","sale":119.05},
+{"doc":"V-INV-03361","customer":"Evirgen Ulas","sale":56.19}
+],
+"docCount":209
+},
+"Jun_2026":{
+"rowCount":439,
+"brands":[
+{"name":"BBB","sale":454.29,"cogs":215.72,"profit":238.57},
+{"name":"CONTINENTAL","sale":893.34,"cogs":583.7,"profit":309.64},
+{"name":"Chamois","sale":423.8,"cogs":242.86,"profit":180.94},
+{"name":"DT SWISS","sale":188.58,"cogs":138.6,"profit":49.98},
+{"name":"ENVE","sale":161803.1,"cogs":69796.72,"profit":92006.38},
+{"name":"Gym Sox","sale":50.0,"cogs":0.01,"profit":49.99},
+{"name":"Humantra","sale":230.48,"cogs":132.3,"profit":98.18},
+{"name":"LOOK","sale":1281.95,"cogs":735.62,"profit":546.33},
+{"name":"Maurten","sale":296.19,"cogs":185.43,"profit":110.76},
+{"name":"Muc-Off","sale":697.13,"cogs":421.75,"profit":275.38},
+{"name":"OAKLEY","sale":903.81,"cogs":404.85,"profit":498.96},
+{"name":"OTE SPORTS","sale":85.72,"cogs":0.05,"profit":85.67},
+{"name":"POC Sports","sale":4304.17,"cogs":2181.67,"profit":2122.5},
+{"name":"POLISPORT","sale":0.0,"cogs":12.7,"profit":-12.7},
+{"name":"QUOC","sale":11160.04,"cogs":5197.51,"profit":5962.53},
+{"name":"RENTAL","sale":795.72,"cogs":0.0,"profit":795.72},
+{"name":"SERVICE","sale":16443.93,"cogs":0.0,"profit":16443.93},
+{"name":"SHIMANO","sale":758.09,"cogs":547.84,"profit":210.25},
+{"name":"STYRKR","sale":982.13,"cogs":22.57,"profit":959.56},
+{"name":"SUPACAZ","sale":160.95,"cogs":117.86,"profit":43.09},
+{"name":"Schwalbe","sale":294.29,"cogs":200.85,"profit":93.44},
+{"name":"SwissStop","sale":141.9,"cogs":69.5,"profit":72.4},
+{"name":"TRI-FIT","sale":999.05,"cogs":470.58,"profit":528.47},
+{"name":"Unknown","sale":-12427.19,"cogs":0.0,"profit":-12427.19},
+{"name":"VENTUM","sale":79205.16,"cogs":49111.05,"profit":30094.11},
+{"name":"VITTORIA","sale":1919.85,"cogs":1150.26,"profit":769.59},
+{"name":"WAHOO","sale":341.14,"cogs":234.0,"profit":107.14},
+{"name":"Wyld","sale":2592.45,"cogs":2313.0,"profit":279.45},
+{"name":"XLAB","sale":3801.9,"cogs":1181.15,"profit":2620.75}
+],
+"total":{"sale":278781.97,"cogs":135668.16,"profit":143113.81},
+"onlineSale":12443.36,
+"otherSale":266338.61,
+"onlineOrders":[
+{"doc":"V-INV-03512","customer":"Saud Kajoor","sale":3999.33},
+{"doc":"V-INV-03484","customer":"RASHID ALTAYER","sale":932.67},
+{"doc":"V-INV-03639","customer":"Sofia Brontvein","sale":932.67},
+{"doc":"V-INV-03586","customer":"Fahd Mukhtar","sale":732.38},
+{"doc":"V-INV-03554","customer":"alberto Canteli suarez","sale":569.52},
+{"doc":"V-INV-03630","customer":"Richard Farren","sale":566.66},
+{"doc":"V-INV-03592","customer":"Jacob Potma","sale":475.24},
+{"doc":"V-INV-03664","customer":"Kiran kang","sale":433.34},
+{"doc":"V-INV-03467","customer":"Thea Kearse","sale":428.57},
+{"doc":"V-INV-03632","customer":"james brodie","sale":391.43},
+{"doc":"V-INV-03641","customer":"Richard Farren","sale":316.29},
+{"doc":"V-INV-03449","customer":"John Barrowman","sale":261.91},
+{"doc":"V-INV-03669","customer":"YURI KOVELEV","sale":261.91},
+{"doc":"V-INV-03569","customer":"james brodie","sale":228.57},
+{"doc":"V-INV-03579","customer":"Christopher Van der walt","sale":228.57},
+{"doc":"V-INV-03523","customer":"Christian irce","sale":228.57},
+{"doc":"V-INV-03431","customer":"Richard Farren","sale":210.0},
+{"doc":"V-INV-03666","customer":"Richard Farren","sale":208.57},
+{"doc":"V-INV-03440","customer":"Peter Reid","sale":200.0},
+{"doc":"V-INV-03448","customer":"khodor yassine","sale":190.48},
+{"doc":"V-INV-03627","customer":"Christopher Taylor","sale":165.72},
+{"doc":"V-INV-03456","customer":"Imran Ghumra","sale":152.38},
+{"doc":"V-INV-03648","customer":"Cihan Boztarla","sale":123.81},
+{"doc":"V-INV-03481","customer":"JOHN RHO","sale":71.43},
+{"doc":"V-INV-03433","customer":"Olga Poninova","sale":71.43},
+{"doc":"V-INV-03502","customer":"Ryan Christian","sale":61.91},
+{"doc":"V-INV-03593, V-CR-00149","customer":"Brandi Gribbin","sale":0.0}
+],
+"docCount":222
+},
+"Jul_2026":{
+"rowCount":385,
+"brands":[
+{"name":"Chamois","sale":169.52,"cogs":97.14,"profit":72.38},
+{"name":"DT SWISS","sale":188.57,"cogs":138.6,"profit":49.97},
+{"name":"ENVE","sale":61221.31,"cogs":22031.36,"profit":39189.95},
+{"name":"Gym Sox","sale":250.0,"cogs":0.05,"profit":249.95},
+{"name":"Humantra","sale":346.67,"cogs":192.15,"profit":154.52},
+{"name":"KBLE","sale":27.62,"cogs":5.39,"profit":22.23},
+{"name":"LEZYNE","sale":23.81,"cogs":8.05,"profit":15.76},
+{"name":"LOOK","sale":339.04,"cogs":161.91,"profit":177.13},
+{"name":"Maurten","sale":312.38,"cogs":196.8,"profit":115.58},
+{"name":"Muc-Off","sale":320.95,"cogs":170.5,"profit":150.45},
+{"name":"NORDA","sale":1332.38,"cogs":366.43,"profit":965.95},
+{"name":"OAKLEY","sale":824.49,"cogs":385.94,"profit":438.55},
+{"name":"OTE SPORTS","sale":600.16,"cogs":0.4,"profit":599.76},
+{"name":"OTHER","sale":171.43,"cogs":83.3,"profit":88.13},
+{"name":"POC Sports","sale":2586.77,"cogs":1428.86,"profit":1157.91},
+{"name":"POLISPORT","sale":93.33,"cogs":12.7,"profit":80.63},
+{"name":"QUOC","sale":10774.29,"cogs":4755.9,"profit":6018.39},
+{"name":"RENTAL","sale":3391.43,"cogs":0.0,"profit":3391.43},
+{"name":"SERVICE","sale":11190.27,"cogs":0.0,"profit":11190.27},
+{"name":"SHIMANO","sale":3691.68,"cogs":2233.89,"profit":1457.79},
+{"name":"SRAM","sale":199.05,"cogs":119.4,"profit":79.65},
+{"name":"STYRKR","sale":166.94,"cogs":0.11,"profit":166.83},
+{"name":"SUPACAZ","sale":321.9,"cogs":235.71,"profit":86.19},
+{"name":"Schwalbe","sale":294.29,"cogs":200.85,"profit":93.44},
+{"name":"Unknown","sale":-5824.5,"cogs":0.0,"profit":-5824.5},
+{"name":"VENTUM","sale":143652.38,"cogs":96536.21,"profit":47116.17},
+{"name":"VITTORIA","sale":965.74,"cogs":529.04,"profit":436.7},
+{"name":"Wyld","sale":580.0,"cogs":399.0,"profit":181.0},
+{"name":"XLAB","sale":1579.7,"cogs":479.37,"profit":1100.33}
+],
+"total":{"sale":239791.6,"cogs":130769.07,"profit":109022.53},
+"onlineSale":8325.05,
+"otherSale":231466.55,
+"onlineOrders":[
+{"doc":"V-INV-03766","customer":"Sami Nasr","sale":1332.38},
+{"doc":"V-INV-03720","customer":"Brenden King","sale":1320.0},
+{"doc":"V-INV-03699","customer":"RASHID ALTAYER","sale":932.67},
+{"doc":"V-INV-03691","customer":"Jagjit Mahal","sale":619.05},
+{"doc":"V-INV-03759","customer":"Marcel Chomic","sale":491.43},
+{"doc":"V-INV-03710","customer":"Ahmad karaky","sale":475.24},
+{"doc":"V-INV-03804","customer":"Brenden King","sale":453.33},
+{"doc":"V-INV-03775","customer":"Mona lastname","sale":389.52},
+{"doc":"V-INV-03724","customer":"Tanvir Haque","sale":332.38},
+{"doc":"V-INV-03762","customer":"Chris Putney","sale":300.0},
+{"doc":"V-INV-03839","customer":"Tom Ronnfeldt","sale":285.71},
+{"doc":"V-INV-03799","customer":"Sonny lastname","sale":226.67},
+{"doc":"V-INV-03723","customer":"Calum Park","sale":200.0},
+{"doc":"V-INV-03834","customer":"Fabian Wachsmuth","sale":200.0},
+{"doc":"V-INV-03735","customer":"Marcel Chomic","sale":200.0},
+{"doc":"V-INV-03703","customer":"JOHN RHO","sale":152.38},
+{"doc":"V-INV-03816","customer":"JOHN RHO","sale":152.38},
+{"doc":"V-INV-03695","customer":"JOHN RHO","sale":119.05},
+{"doc":"V-INV-03753","customer":"JOHN RHO","sale":71.43},
+{"doc":"V-INV-03805","customer":"Jonh Last Name","sale":71.43}
+],
+"docCount":139
+},
+"Aug_2026":{
+"rowCount":74,
+"brands":[
+{"name":"CONTINENTAL","sale":446.67,"cogs":291.85,"profit":154.82},
+{"name":"Chamois","sale":169.52,"cogs":97.14,"profit":72.38},
+{"name":"ENVE","sale":599.32,"cogs":182.73,"profit":416.59},
+{"name":"LEZYNE","sale":422.86,"cogs":235.48,"profit":187.38},
+{"name":"OAKLEY","sale":2465.08,"cogs":2275.34,"profit":189.74},
+{"name":"OTE SPORTS","sale":100.01,"cogs":0.06,"profit":99.95},
+{"name":"QUOC","sale":1998.1,"cogs":881.01,"profit":1117.09},
+{"name":"SERVICE","sale":3378.11,"cogs":0.0,"profit":3378.11},
+{"name":"SHIMANO","sale":370.47,"cogs":146.84,"profit":223.63},
+{"name":"Schwalbe","sale":588.57,"cogs":401.7,"profit":186.87},
+{"name":"SwissStop","sale":283.81,"cogs":0.0,"profit":283.81},
+{"name":"TACX","sale":1075.24,"cogs":855.2,"profit":220.04},
+{"name":"Unknown","sale":-94.85,"cogs":0.0,"profit":-94.85},
+{"name":"VENTUM","sale":32080.3,"cogs":16677.88,"profit":15402.42},
+{"name":"VITTORIA","sale":420.96,"cogs":208.57,"profit":212.39},
+{"name":"Wyld","sale":0.01,"cogs":399.0,"profit":-398.99},
+{"name":"XLAB","sale":664.76,"cogs":178.96,"profit":485.8}
+],
+"total":{"sale":44968.94,"cogs":22831.76,"profit":22137.18},
+"onlineSale":3007.62,
+"otherSale":41961.32,
+"onlineOrders":[
+{"doc":"V-INV-03860, V-CR-00157","customer":"Rosanna Nocakovic","sale":1780.0},
+{"doc":"V-INV-03869","customer":"Sohom Bhattacharya","sale":1075.24},
+{"doc":"V-INV-03882","customer":"JOHN RHO","sale":152.38}
+],
+"docCount":38
+}
+};
+const MONTHLY_ORDER = ['May_2026', 'Jun_2026', 'Jul_2026', 'Aug_2026'];
+const MONTHLY_LABELS = {
+  May_2026: 'May 2026',
+  Jun_2026: 'June 2026',
+  Jul_2026: 'July 2026',
+  Aug_2026: 'August 2026 (to 09 Aug)'
+};
+const WEEKLY_DATA = {
+"2026-04-27":{
+"rowCount":63,
+"brands":[
+{"name":"CONTINENTAL","sale":1340.0,"cogs":875.55,"profit":464.45},
+{"name":"Chamois","sale":84.76,"cogs":48.57,"profit":36.19},
+{"name":"ENVE","sale":17676.57,"cogs":8029.18,"profit":9647.39},
+{"name":"LOOK","sale":188.57,"cogs":114.28,"profit":74.29},
+{"name":"OAKLEY","sale":632.67,"cogs":404.85,"profit":227.82},
+{"name":"POC Sports","sale":1713.33,"cogs":616.05,"profit":1097.28},
+{"name":"POLISPORT","sale":46.67,"cogs":3.18,"profit":43.49},
+{"name":"RENTAL","sale":663.81,"cogs":0.0,"profit":663.81},
+{"name":"SERVICE","sale":1642.85,"cogs":0.0,"profit":1642.85},
+{"name":"SRAM","sale":0.0,"cogs":4611.3,"profit":-4611.3},
+{"name":"STYRKR","sale":304.77,"cogs":0.2,"profit":304.57},
+{"name":"Schwalbe","sale":586.67,"cogs":452.4,"profit":134.27},
+{"name":"Unknown","sale":-394.1,"cogs":0.0,"profit":-394.1},
+{"name":"VENTUM","sale":10179.35,"cogs":14985.14,"profit":-4805.79},
+{"name":"VITTORIA","sale":76.19,"cogs":41.91,"profit":34.28},
+{"name":"Wyld","sale":1017.14,"cogs":678.0,"profit":339.14},
+{"name":"XLAB","sale":598.09,"cogs":188.01,"profit":410.08}
+],
+"total":{"sale":36357.34,"cogs":31048.61,"profit":5308.73},
+"onlineSale":1520.95,
+"otherSale":34836.39,
+"onlineOrders":[
+{"doc":"V-INV-03230","customer":"mike camahalan","sale":428.57},
+{"doc":"V-INV-03229","customer":"Jamie Ireland","sale":428.57},
+{"doc":"V-INV-03208","customer":"Chris Wood","sale":340.0},
+{"doc":"V-INV-03231","customer":"Claudia Maestre Santa","sale":200.0},
+{"doc":"V-INV-03219","customer":"Dante Noche","sale":123.81}
+],
+"docCount":27,
+"label":"Week of 01 May - 03 May 2026 (partial - FY starts 01 May)"
+},
+"2026-05-04":{
+"rowCount":130,
+"brands":[
+{"name":"CONTINENTAL","sale":893.33,"cogs":583.7,"profit":309.63},
+{"name":"Chamois","sale":254.28,"cogs":145.72,"profit":108.56},
+{"name":"ENVE","sale":4799.75,"cogs":5228.33,"profit":-428.58},
+{"name":"FIZIK","sale":1389.52,"cogs":1044.58,"profit":344.94},
+{"name":"FSA","sale":302.86,"cogs":179.53,"profit":123.33},
+{"name":"Gym Sox","sale":50.0,"cogs":0.01,"profit":49.99},
+{"name":"Humantra","sale":6.67,"cogs":3.15,"profit":3.52},
+{"name":"LOOK","sale":103.81,"cogs":52.38,"profit":51.43},
+{"name":"MERRELL","sale":694.29,"cogs":143.27,"profit":551.02},
+{"name":"Muc-Off","sale":236.19,"cogs":130.75,"profit":105.44},
+{"name":"NORDA","sale":627.62,"cogs":143.06,"profit":484.56},
+{"name":"OAKLEY","sale":1908.86,"cogs":969.21,"profit":939.65},
+{"name":"POC Sports","sale":1121.91,"cogs":472.84,"profit":649.07},
+{"name":"RENTAL","sale":113.33,"cogs":0.0,"profit":113.33},
+{"name":"SERVICE","sale":4399.05,"cogs":0.0,"profit":4399.05},
+{"name":"SHIMANO","sale":1046.67,"cogs":689.0,"profit":357.67},
+{"name":"STYRKR","sale":985.61,"cogs":0.57,"profit":985.04},
+{"name":"Schwalbe","sale":1177.14,"cogs":803.4,"profit":373.74},
+{"name":"Unknown","sale":-1017.64,"cogs":0.0,"profit":-1017.64},
+{"name":"VENTUM","sale":7853.36,"cogs":16613.66,"profit":-8760.3},
+{"name":"VITTORIA","sale":224.96,"cogs":126.67,"profit":98.29},
+{"name":"XLAB","sale":2841.89,"cogs":793.24,"profit":2048.65}
+],
+"total":{"sale":30013.46,"cogs":28123.06,"profit":1890.4},
+"onlineSale":7282.47,
+"otherSale":22730.99,
+"onlineOrders":[
+{"doc":"V-INV-03257","customer":"Marvin Andal","sale":4199.33},
+{"doc":"V-INV-03243","customer":"Ayman Sikafi","sale":1179.04},
+{"doc":"V-INV-03277","customer":"Harry Ross dreher","sale":632.67},
+{"doc":"V-INV-03249","customer":"Jaco Luijendijk","sale":428.57},
+{"doc":"V-INV-03241","customer":"Milad Sangi","sale":428.57},
+{"doc":"V-INV-03262","customer":"khodor yassine","sale":414.29}
+],
+"docCount":56,
+"label":"Week of 04 May - 10 May 2026"
+},
+"2026-05-11":{
+"rowCount":409,
+"brands":[
+{"name":"Chamois","sale":84.76,"cogs":48.57,"profit":36.19},
+{"name":"ENVE","sale":79072.8,"cogs":33850.72,"profit":45222.08},
+{"name":"Humantra","sale":13.34,"cogs":6.3,"profit":7.04},
+{"name":"KBLE","sale":27.62,"cogs":5.39,"profit":22.23},
+{"name":"LEZYNE","sale":399.05,"cogs":227.43,"profit":171.62},
+{"name":"LOOK","sale":246.67,"cogs":159.43,"profit":87.24},
+{"name":"Muc-Off","sale":133.34,"cogs":84.0,"profit":49.34},
+{"name":"OAKLEY","sale":903.81,"cogs":404.85,"profit":498.96},
+{"name":"POC Sports","sale":3255.23,"cogs":1117.41,"profit":2137.82},
+{"name":"POLISPORT","sale":93.34,"cogs":6.35,"profit":86.99},
+{"name":"QUOC","sale":580.0,"cogs":357.31,"profit":222.69},
+{"name":"RENTAL","sale":830.0,"cogs":0.0,"profit":830.0},
+{"name":"SERVICE","sale":4491.42,"cogs":0.0,"profit":4491.42},
+{"name":"SHIMANO","sale":1863.81,"cogs":943.73,"profit":920.08},
+{"name":"STYRKR","sale":66.19,"cogs":0.04,"profit":66.15},
+{"name":"Schwalbe","sale":37.14,"cogs":25.35,"profit":11.79},
+{"name":"Unknown","sale":-2709.05,"cogs":0.0,"profit":-2709.05},
+{"name":"VENTUM","sale":92114.64,"cogs":158002.36,"profit":-65887.72},
+{"name":"VITTORIA","sale":76.2,"cogs":43.81,"profit":32.39},
+{"name":"Wyld","sale":437.14,"cogs":279.0,"profit":158.14},
+{"name":"XLAB","sale":799.05,"cogs":259.83,"profit":539.22}
+],
+"total":{"sale":182816.5,"cogs":195821.87,"profit":-13005.37},
+"onlineSale":1700.47,
+"otherSale":181116.03,
+"onlineOrders":[
+{"doc":"V-INV-03343","customer":"Tanvir Haque","sale":571.42},
+{"doc":"V-INV-03326","customer":"Chris Wood","sale":340.0},
+{"doc":"V-INV-03331","customer":"Sarah Barber","sale":340.0},
+{"doc":"V-INV-03309","customer":"Christopher Taylor","sale":299.05},
+{"doc":"V-INV-03301","customer":"Joe Joe","sale":150.0}
+],
+"docCount":55,
+"label":"Week of 11 May - 17 May 2026"
+},
+"2026-05-18":{
+"rowCount":124,
+"brands":[
+{"name":"CONTINENTAL","sale":446.67,"cogs":291.85,"profit":154.82},
+{"name":"Chamois","sale":84.76,"cogs":48.57,"profit":36.19},
+{"name":"ENVE","sale":34335.5,"cogs":14356.79,"profit":19978.71},
+{"name":"FSA","sale":98.43,"cogs":89.76,"profit":8.67},
+{"name":"Humantra","sale":6.67,"cogs":3.15,"profit":3.52},
+{"name":"OAKLEY","sale":808.57,"cogs":363.23,"profit":445.34},
+{"name":"POC Sports","sale":712.38,"cogs":326.04,"profit":386.34},
+{"name":"POLISPORT","sale":46.67,"cogs":9.53,"profit":37.14},
+{"name":"RENTAL","sale":226.67,"cogs":0.0,"profit":226.67},
+{"name":"SERVICE","sale":5247.5,"cogs":0.0,"profit":5247.5},
+{"name":"SHIMANO","sale":1769.52,"cogs":948.06,"profit":821.46},
+{"name":"SRAM","sale":427.62,"cogs":278.6,"profit":149.02},
+{"name":"STYRKR","sale":225.72,"cogs":0.09,"profit":225.63},
+{"name":"Unknown","sale":-5808.75,"cogs":0.0,"profit":-5808.75},
+{"name":"VENTUM","sale":4617.14,"cogs":8174.74,"profit":-3557.6},
+{"name":"VITTORIA","sale":219.26,"cogs":134.29,"profit":84.97},
+{"name":"WAHOO","sale":275.24,"cogs":181.35,"profit":93.89},
+{"name":"Wyld","sale":437.14,"cogs":279.0,"profit":158.14},
+{"name":"XLAB","sale":732.38,"cogs":245.39,"profit":486.99}
+],
+"total":{"sale":44909.09,"cogs":25730.44,"profit":19178.65},
+"onlineSale":3751.41,
+"otherSale":41157.68,
+"onlineOrders":[
+{"doc":"V-INV-03357","customer":"Mark Malone","sale":571.42},
+{"doc":"V-INV-03392","customer":"Arda Korol","sale":571.42},
+{"doc":"V-INV-03393","customer":"Arnel Maravillas","sale":560.95},
+{"doc":"V-INV-03353","customer":"Imran Ghumra","sale":463.81},
+{"doc":"V-INV-03362","customer":"Imran Ghumra","sale":428.57},
+{"doc":"V-INV-03373","customer":"Mark Malone","sale":402.86},
+{"doc":"V-INV-03364","customer":"Tanvir Haque","sale":350.47},
+{"doc":"V-INV-03363","customer":"Chris Wood","sale":226.67},
+{"doc":"V-INV-03384","customer":"JOHN RHO","sale":119.05},
+{"doc":"V-INV-03361","customer":"Evirgen Ulas","sale":56.19}
+],
+"docCount":43,
+"label":"Week of 18 May - 24 May 2026"
+},
+"2026-05-25":{
+"rowCount":53,
+"brands":[
+{"name":"CONTINENTAL","sale":702.86,"cogs":440.7,"profit":262.16},
+{"name":"Chamois","sale":84.76,"cogs":48.57,"profit":36.19},
+{"name":"ENVE","sale":12246.78,"cogs":6101.8,"profit":6144.98},
+{"name":"Gym Sox","sale":50.0,"cogs":0.01,"profit":49.99},
+{"name":"LOOK","sale":1607.62,"cogs":877.38,"profit":730.24},
+{"name":"POC Sports","sale":2264.76,"cogs":931.27,"profit":1333.49},
+{"name":"POLISPORT","sale":46.67,"cogs":3.18,"profit":43.49},
+{"name":"QUOC","sale":1780.0,"cogs":785.34,"profit":994.66},
+{"name":"SERVICE","sale":1545.72,"cogs":0.0,"profit":1545.72},
+{"name":"SHIMANO","sale":3509.52,"cogs":1133.39,"profit":2376.13},
+{"name":"SRAM","sale":1595.9,"cogs":850.6,"profit":745.3},
+{"name":"STYRKR","sale":104.76,"cogs":0.02,"profit":104.74},
+{"name":"SwissStop","sale":141.9,"cogs":69.5,"profit":72.4},
+{"name":"Unknown","sale":0.0,"cogs":0.0,"profit":0.0},
+{"name":"VENTUM","sale":879.04,"cogs":460.34,"profit":418.7},
+{"name":"VITTORIA","sale":215.24,"cogs":105.72,"profit":109.52},
+{"name":"WAHOO","sale":232.23,"cogs":161.85,"profit":70.38},
+{"name":"Wyld","sale":580.0,"cogs":399.0,"profit":181.0},
+{"name":"XLAB","sale":640.67,"cogs":234.02,"profit":406.65}
+],
+"total":{"sale":28228.43,"cogs":12602.68,"profit":15625.75},
+"onlineSale":626.67,
+"otherSale":27601.76,
+"onlineOrders":[
+{"doc":"V-INV-03405","customer":"JOHN RHO","sale":389.52},
+{"doc":"V-INV-03398","customer":"Georgina Bishop","sale":237.15}
+],
+"docCount":29,
+"label":"Week of 25 May - 31 May 2026"
+},
+"2026-06-01":{
+"rowCount":115,
+"brands":[
+{"name":"BBB","sale":113.33,"cogs":54.76,"profit":58.57},
+{"name":"CONTINENTAL","sale":446.67,"cogs":291.85,"profit":154.82},
+{"name":"ENVE","sale":27008.59,"cogs":12094.91,"profit":14913.68},
+{"name":"Gym Sox","sale":50.0,"cogs":0.01,"profit":49.99},
+{"name":"LOOK","sale":856.23,"cogs":481.91,"profit":374.32},
+{"name":"Maurten","sale":130.48,"cogs":81.73,"profit":48.75},
+{"name":"Muc-Off","sale":329.52,"cogs":207.0,"profit":122.52},
+{"name":"POC Sports","sale":661.48,"cogs":345.88,"profit":315.59},
+{"name":"QUOC","sale":3806.66,"cogs":1670.24,"profit":2136.41},
+{"name":"RENTAL","sale":410.0,"cogs":0.0,"profit":410.0},
+{"name":"SERVICE","sale":3742.89,"cogs":0.0,"profit":3742.89},
+{"name":"SHIMANO","sale":114.29,"cogs":23.83,"profit":90.46},
+{"name":"STYRKR","sale":150.47,"cogs":0.05,"profit":150.42},
+{"name":"SUPACAZ","sale":160.95,"cogs":117.86,"profit":43.09},
+{"name":"Unknown","sale":-3046.55,"cogs":0.0,"profit":-3046.55},
+{"name":"VENTUM","sale":34705.83,"cogs":13237.91,"profit":21467.92},
+{"name":"VITTORIA","sale":38.1,"cogs":41.19,"profit":-3.09},
+{"name":"WAHOO","sale":189.52,"cogs":117.0,"profit":72.52},
+{"name":"Wyld","sale":1160.01,"cogs":1077.0,"profit":83.01},
+{"name":"XLAB","sale":664.76,"cogs":178.96,"profit":485.8}
+],
+"total":{"sale":71693.23,"cogs":30022.1,"profit":41671.13},
+"onlineSale":2518.87,
+"otherSale":69174.36,
+"onlineOrders":[
+{"doc":"V-INV-03484","customer":"RASHID ALTAYER","sale":932.67},
+{"doc":"V-INV-03467","customer":"Thea Kearse","sale":428.57},
+{"doc":"V-INV-03449","customer":"John Barrowman","sale":261.91},
+{"doc":"V-INV-03431","customer":"Richard Farren","sale":210.0},
+{"doc":"V-INV-03440","customer":"Peter Reid","sale":200.0},
+{"doc":"V-INV-03448","customer":"khodor yassine","sale":190.48},
+{"doc":"V-INV-03456","customer":"Imran Ghumra","sale":152.38},
+{"doc":"V-INV-03433","customer":"Olga Poninova","sale":71.43},
+{"doc":"V-INV-03481","customer":"JOHN RHO","sale":71.43}
+],
+"docCount":53,
+"label":"Week of 01 Jun - 07 Jun 2026"
+},
+"2026-06-08":{
+"rowCount":113,
+"brands":[
+{"name":"BBB","sale":170.48,"cogs":80.48,"profit":90.0},
+{"name":"CONTINENTAL","sale":446.67,"cogs":291.85,"profit":154.82},
+{"name":"Chamois","sale":169.52,"cogs":97.14,"profit":72.38},
+{"name":"DT SWISS","sale":94.29,"cogs":69.3,"profit":24.99},
+{"name":"ENVE","sale":69025.47,"cogs":31237.49,"profit":37787.98},
+{"name":"Humantra","sale":6.67,"cogs":3.15,"profit":3.52},
+{"name":"LOOK","sale":340.96,"cogs":211.81,"profit":129.15},
+{"name":"Maurten","sale":152.38,"cogs":95.53,"profit":56.85},
+{"name":"Muc-Off","sale":170.48,"cogs":97.0,"profit":73.48},
+{"name":"POLISPORT","sale":0.0,"cogs":12.7,"profit":-12.7},
+{"name":"QUOC","sale":1780.0,"cogs":785.34,"profit":994.66},
+{"name":"RENTAL","sale":61.91,"cogs":0.0,"profit":61.91},
+{"name":"SERVICE","sale":3198.13,"cogs":0.0,"profit":3198.13},
+{"name":"SHIMANO","sale":321.9,"cogs":262.01,"profit":59.89},
+{"name":"STYRKR","sale":576.66,"cogs":11.33,"profit":565.33},
+{"name":"SwissStop","sale":141.9,"cogs":69.5,"profit":72.4},
+{"name":"Unknown","sale":-7048.52,"cogs":0.0,"profit":-7048.52},
+{"name":"VENTUM","sale":20812.36,"cogs":22371.87,"profit":-1559.51},
+{"name":"VITTORIA","sale":159.07,"cogs":134.29,"profit":24.78},
+{"name":"WAHOO","sale":151.62,"cogs":117.0,"profit":34.62},
+{"name":"Wyld","sale":437.14,"cogs":279.0,"profit":158.14},
+{"name":"XLAB","sale":1882.86,"cogs":617.77,"profit":1265.09}
+],
+"total":{"sale":93051.95,"cogs":56844.57,"profit":36207.38},
+"onlineSale":4859.33,
+"otherSale":88192.62,
+"onlineOrders":[
+{"doc":"V-INV-03512","customer":"Saud Kajoor","sale":3999.33},
+{"doc":"V-INV-03554","customer":"alberto Canteli suarez","sale":569.52},
+{"doc":"V-INV-03523","customer":"Christian irce","sale":228.57},
+{"doc":"V-INV-03502","customer":"Ryan Christian","sale":61.91}
+],
+"docCount":57,
+"label":"Week of 08 Jun - 14 Jun 2026"
+},
+"2026-06-15":{
+"rowCount":102,
+"brands":[
+{"name":"BBB","sale":170.48,"cogs":80.48,"profit":90.0},
+{"name":"Chamois","sale":84.76,"cogs":48.57,"profit":36.19},
+{"name":"DT SWISS","sale":94.29,"cogs":69.3,"profit":24.99},
+{"name":"ENVE","sale":9707.23,"cogs":4909.93,"profit":4797.3},
+{"name":"Humantra","sale":120.0,"cogs":66.15,"profit":53.85},
+{"name":"LOOK","sale":84.76,"cogs":41.91,"profit":42.85},
+{"name":"OAKLEY","sale":903.81,"cogs":404.85,"profit":498.96},
+{"name":"OTE SPORTS","sale":42.86,"cogs":0.03,"profit":42.83},
+{"name":"POC Sports","sale":1782.95,"cogs":766.48,"profit":1016.47},
+{"name":"QUOC","sale":5479.09,"cogs":2700.22,"profit":2778.87},
+{"name":"RENTAL","sale":0.0,"cogs":0.0,"profit":0.0},
+{"name":"SERVICE","sale":4869.54,"cogs":0.0,"profit":4869.54},
+{"name":"STYRKR","sale":184.52,"cogs":0.06,"profit":184.46},
+{"name":"TRI-FIT","sale":999.05,"cogs":470.58,"profit":528.47},
+{"name":"Unknown","sale":-509.23,"cogs":0.0,"profit":-509.23},
+{"name":"VENTUM","sale":22805.07,"cogs":13425.87,"profit":9379.2},
+{"name":"VITTORIA","sale":753.05,"cogs":420.01,"profit":333.04},
+{"name":"Wyld","sale":415.3,"cogs":558.0,"profit":-142.7},
+{"name":"XLAB","sale":969.52,"cogs":308.72,"profit":660.8}
+],
+"total":{"sale":48957.05,"cogs":24271.15,"profit":24685.9},
+"onlineSale":1664.76,
+"otherSale":47292.29,
+"onlineOrders":[
+{"doc":"V-INV-03586","customer":"Fahd Mukhtar","sale":732.38},
+{"doc":"V-INV-03592","customer":"Jacob Potma","sale":475.24},
+{"doc":"V-INV-03569","customer":"james brodie","sale":228.57},
+{"doc":"V-INV-03579","customer":"Christopher Van der walt","sale":228.57},
+{"doc":"V-INV-03593, V-CR-00149","customer":"Brandi Gribbin","sale":0.0}
+],
+"docCount":53,
+"label":"Week of 15 Jun - 21 Jun 2026"
+},
+"2026-06-22":{
+"rowCount":76,
+"brands":[
+{"name":"Chamois","sale":169.52,"cogs":97.14,"profit":72.38},
+{"name":"ENVE","sale":53188.76,"cogs":19989.55,"profit":33199.21},
+{"name":"Humantra","sale":103.81,"cogs":63.0,"profit":40.81},
+{"name":"Maurten","sale":13.33,"cogs":8.17,"profit":5.16},
+{"name":"Muc-Off","sale":65.71,"cogs":42.0,"profit":23.71},
+{"name":"OTE SPORTS","sale":42.86,"cogs":0.02,"profit":42.84},
+{"name":"POC Sports","sale":207.61,"cogs":123.47,"profit":84.14},
+{"name":"QUOC","sale":94.29,"cogs":41.7,"profit":52.59},
+{"name":"RENTAL","sale":323.81,"cogs":0.0,"profit":323.81},
+{"name":"SERVICE","sale":2779.06,"cogs":0.0,"profit":2779.06},
+{"name":"SHIMANO","sale":321.9,"cogs":262.01,"profit":59.89},
+{"name":"STYRKR","sale":70.48,"cogs":11.13,"profit":59.35},
+{"name":"Schwalbe","sale":294.29,"cogs":200.85,"profit":93.44},
+{"name":"Unknown","sale":-1842.56,"cogs":0.0,"profit":-1842.56},
+{"name":"VENTUM","sale":284.76,"cogs":31.32,"profit":253.44},
+{"name":"VITTORIA","sale":522.96,"cogs":300.01,"profit":222.95},
+{"name":"Wyld","sale":580.0,"cogs":399.0,"profit":181.0},
+{"name":"XLAB","sale":284.76,"cogs":75.7,"profit":209.06}
+],
+"total":{"sale":57505.35,"cogs":21645.08,"profit":35860.27},
+"onlineSale":2496.58,
+"otherSale":55008.77,
+"onlineOrders":[
+{"doc":"V-INV-03639","customer":"Sofia Brontvein","sale":932.67},
+{"doc":"V-INV-03630","customer":"Richard Farren","sale":566.66},
+{"doc":"V-INV-03632","customer":"james brodie","sale":391.43},
+{"doc":"V-INV-03641","customer":"Richard Farren","sale":316.29},
+{"doc":"V-INV-03627","customer":"Christopher Taylor","sale":165.72},
+{"doc":"V-INV-03648","customer":"Cihan Boztarla","sale":123.81}
+],
+"docCount":41,
+"label":"Week of 22 Jun - 28 Jun 2026"
+},
+"2026-06-29":{
+"rowCount":131,
+"brands":[
+{"name":"Chamois","sale":84.76,"cogs":48.57,"profit":36.19},
+{"name":"ENVE","sale":30787.72,"cogs":13527.95,"profit":17259.77},
+{"name":"Gym Sox","sale":50.0,"cogs":0.01,"profit":49.99},
+{"name":"LOOK","sale":84.76,"cogs":41.91,"profit":42.85},
+{"name":"Maurten","sale":85.71,"cogs":54.0,"profit":31.71},
+{"name":"Muc-Off","sale":235.23,"cogs":130.75,"profit":104.48},
+{"name":"OTE SPORTS","sale":113.82,"cogs":0.07,"profit":113.75},
+{"name":"POC Sports","sale":2008.37,"cogs":1236.87,"profit":771.5},
+{"name":"QUOC","sale":3560.0,"cogs":1572.83,"profit":1987.17},
+{"name":"SERVICE","sale":4167.66,"cogs":0.0,"profit":4167.66},
+{"name":"SHIMANO","sale":1874.28,"cogs":1050.58,"profit":823.7},
+{"name":"SRAM","sale":199.05,"cogs":119.4,"profit":79.65},
+{"name":"STYRKR","sale":28.57,"cogs":0.02,"profit":28.55},
+{"name":"Unknown","sale":-858.43,"cogs":0.0,"profit":-858.43},
+{"name":"VENTUM","sale":19889.53,"cogs":17235.92,"profit":2653.61},
+{"name":"VITTORIA","sale":586.68,"cogs":323.32,"profit":263.36}
+],
+"total":{"sale":62897.71,"cogs":35342.21,"profit":27555.5},
+"onlineSale":3202.21,
+"otherSale":59695.5,
+"onlineOrders":[
+{"doc":"V-INV-03699","customer":"RASHID ALTAYER","sale":932.67},
+{"doc":"V-INV-03691","customer":"Jagjit Mahal","sale":619.05},
+{"doc":"V-INV-03710","customer":"Ahmad karaky","sale":475.24},
+{"doc":"V-INV-03664","customer":"Kiran kang","sale":433.34},
+{"doc":"V-INV-03669","customer":"YURI KOVELEV","sale":261.91},
+{"doc":"V-INV-03666","customer":"Richard Farren","sale":208.57},
+{"doc":"V-INV-03703","customer":"JOHN RHO","sale":152.38},
+{"doc":"V-INV-03695","customer":"JOHN RHO","sale":119.05}
+],
+"docCount":45,
+"label":"Week of 29 Jun - 05 Jul 2026"
+},
+"2026-07-06":{
+"rowCount":88,
+"brands":[
+{"name":"Chamois","sale":84.76,"cogs":48.57,"profit":36.19},
+{"name":"DT SWISS","sale":188.57,"cogs":138.6,"profit":49.97},
+{"name":"ENVE","sale":1899.03,"cogs":735.42,"profit":1163.61},
+{"name":"KBLE","sale":27.62,"cogs":5.39,"profit":22.23},
+{"name":"LEZYNE","sale":23.81,"cogs":8.05,"profit":15.76},
+{"name":"Muc-Off","sale":113.33,"cogs":60.5,"profit":52.83},
+{"name":"RENTAL","sale":1720.0,"cogs":0.0,"profit":1720.0},
+{"name":"SERVICE","sale":3527.64,"cogs":0.0,"profit":3527.64},
+{"name":"SHIMANO","sale":1678.08,"cogs":1052.32,"profit":625.76},
+{"name":"SUPACAZ","sale":160.95,"cogs":117.86,"profit":43.09},
+{"name":"Unknown","sale":-309.47,"cogs":0.0,"profit":-309.47},
+{"name":"VENTUM","sale":18263.84,"cogs":13989.72,"profit":4274.12},
+{"name":"VITTORIA","sale":713.35,"cogs":403.33,"profit":310.02},
+{"name":"Wyld","sale":580.0,"cogs":399.0,"profit":181.0},
+{"name":"XLAB","sale":103.81,"cogs":27.51,"profit":76.3}
+],
+"total":{"sale":28775.32,"cogs":16986.27,"profit":11789.05},
+"onlineSale":2123.81,
+"otherSale":26651.51,
+"onlineOrders":[
+{"doc":"V-INV-03720","customer":"Brenden King","sale":1320.0},
+{"doc":"V-INV-03724","customer":"Tanvir Haque","sale":332.38},
+{"doc":"V-INV-03723","customer":"Calum Park","sale":200.0},
+{"doc":"V-INV-03735","customer":"Marcel Chomic","sale":200.0},
+{"doc":"V-INV-03753","customer":"JOHN RHO","sale":71.43}
+],
+"docCount":34,
+"label":"Week of 06 Jul - 12 Jul 2026"
+},
+"2026-07-13":{
+"rowCount":109,
+"brands":[
+{"name":"ENVE","sale":31029.51,"cogs":9181.13,"profit":21848.38},
+{"name":"Gym Sox","sale":100.0,"cogs":0.02,"profit":99.98},
+{"name":"Humantra","sale":346.67,"cogs":192.15,"profit":154.52},
+{"name":"LOOK","sale":169.52,"cogs":80.0,"profit":89.52},
+{"name":"Maurten","sale":226.67,"cogs":142.8,"profit":83.87},
+{"name":"NORDA","sale":1332.38,"cogs":366.43,"profit":965.95},
+{"name":"OAKLEY","sale":824.49,"cogs":385.94,"profit":438.55},
+{"name":"OTE SPORTS","sale":167.62,"cogs":0.11,"profit":167.51},
+{"name":"OTHER","sale":171.43,"cogs":83.3,"profit":88.13},
+{"name":"POC Sports","sale":1815.24,"cogs":751.0,"profit":1064.24},
+{"name":"POLISPORT","sale":0.0,"cogs":6.35,"profit":-6.35},
+{"name":"QUOC","sale":3654.29,"cogs":1612.39,"profit":2041.9},
+{"name":"RENTAL","sale":791.43,"cogs":0.0,"profit":791.43},
+{"name":"SERVICE","sale":2234.98,"cogs":0.0,"profit":2234.98},
+{"name":"SHIMANO","sale":139.32,"cogs":131.0,"profit":8.32},
+{"name":"STYRKR","sale":109.8,"cogs":0.07,"profit":109.73},
+{"name":"SUPACAZ","sale":160.95,"cogs":117.86,"profit":43.09},
+{"name":"Unknown","sale":-4214.09,"cogs":0.0,"profit":-4214.09},
+{"name":"VENTUM","sale":61570.14,"cogs":45801.06,"profit":15769.08},
+{"name":"VITTORIA","sale":112.38,"cogs":57.14,"profit":55.24},
+{"name":"XLAB","sale":531.81,"cogs":219.31,"profit":312.5}
+],
+"total":{"sale":101274.54,"cogs":59128.06,"profit":42146.48},
+"onlineSale":2513.33,
+"otherSale":98761.21,
+"onlineOrders":[
+{"doc":"V-INV-03766","customer":"Sami Nasr","sale":1332.38},
+{"doc":"V-INV-03759","customer":"Marcel Chomic","sale":491.43},
+{"doc":"V-INV-03775","customer":"Mona lastname","sale":389.52},
+{"doc":"V-INV-03762","customer":"Chris Putney","sale":300.0}
+],
+"docCount":40,
+"label":"Week of 13 Jul - 19 Jul 2026"
+},
+"2026-07-20":{
+"rowCount":46,
+"brands":[
+{"name":"ENVE","sale":94.29,"cogs":53.26,"profit":41.03},
+{"name":"Gym Sox","sale":100.0,"cogs":0.02,"profit":99.98},
+{"name":"LOOK","sale":84.76,"cogs":40.0,"profit":44.76},
+{"name":"OTE SPORTS","sale":309.43,"cogs":0.21,"profit":309.22},
+{"name":"POC Sports","sale":415.29,"cogs":386.82,"profit":28.47},
+{"name":"QUOC","sale":1780.0,"cogs":785.34,"profit":994.66},
+{"name":"RENTAL","sale":680.0,"cogs":0.0,"profit":680.0},
+{"name":"SERVICE","sale":841.91,"cogs":0.0,"profit":841.91},
+{"name":"STYRKR","sale":28.57,"cogs":0.02,"profit":28.55},
+{"name":"Unknown","sale":0.0,"cogs":0.0,"profit":0.0},
+{"name":"VENTUM","sale":22210.77,"cogs":11243.57,"profit":10967.2},
+{"name":"XLAB","sale":470.76,"cogs":108.73,"profit":362.03}
+],
+"total":{"sale":27015.78,"cogs":12617.97,"profit":14397.81},
+"onlineSale":903.81,
+"otherSale":26111.97,
+"onlineOrders":[
+{"doc":"V-INV-03804","customer":"Brenden King","sale":453.33},
+{"doc":"V-INV-03799","customer":"Sonny lastname","sale":226.67},
+{"doc":"V-INV-03816","customer":"JOHN RHO","sale":152.38},
+{"doc":"V-INV-03805","customer":"Jonh Last Name","sale":71.43}
+],
+"docCount":20,
+"label":"Week of 20 Jul - 26 Jul 2026"
+},
+"2026-07-27":{
+"rowCount":63,
+"brands":[
+{"name":"ENVE","sale":283.81,"cogs":98.43,"profit":185.38},
+{"name":"Muc-Off","sale":103.81,"cogs":55.0,"profit":48.81},
+{"name":"OAKLEY","sale":1705.75,"cogs":1791.04,"profit":-85.29},
+{"name":"OTE SPORTS","sale":80.72,"cogs":0.05,"profit":80.67},
+{"name":"POLISPORT","sale":93.33,"cogs":6.35,"profit":86.98},
+{"name":"QUOC","sale":1780.0,"cogs":785.34,"profit":994.66},
+{"name":"RENTAL","sale":200.0,"cogs":0.0,"profit":200.0},
+{"name":"SERVICE","sale":3240.96,"cogs":0.0,"profit":3240.96},
+{"name":"SHIMANO","sale":209.52,"cogs":60.94,"profit":148.58},
+{"name":"Schwalbe","sale":294.29,"cogs":200.85,"profit":93.44},
+{"name":"Unknown","sale":-422.84,"cogs":0.0,"profit":-422.84},
+{"name":"VENTUM","sale":53552.4,"cogs":24649.37,"profit":28903.03},
+{"name":"VITTORIA","sale":56.19,"cogs":25.71,"profit":30.48},
+{"name":"XLAB","sale":473.32,"cogs":123.82,"profit":349.5}
+],
+"total":{"sale":61651.26,"cogs":27796.9,"profit":33854.36},
+"onlineSale":485.71,
+"otherSale":61165.55,
+"onlineOrders":[
+{"doc":"V-INV-03839","customer":"Tom Ronnfeldt","sale":285.71},
+{"doc":"V-INV-03834","customer":"Fabian Wachsmuth","sale":200.0}
+],
+"docCount":25,
+"label":"Week of 27 Jul - 02 Aug 2026"
+},
+"2026-08-03":{
+"rowCount":55,
+"brands":[
+{"name":"CONTINENTAL","sale":446.67,"cogs":291.85,"profit":154.82},
+{"name":"Chamois","sale":169.52,"cogs":97.14,"profit":72.38},
+{"name":"ENVE","sale":599.32,"cogs":182.73,"profit":416.59},
+{"name":"LEZYNE","sale":422.86,"cogs":235.48,"profit":187.38},
+{"name":"OAKLEY","sale":759.33,"cogs":484.3,"profit":275.03},
+{"name":"OTE SPORTS","sale":28.58,"cogs":0.02,"profit":28.56},
+{"name":"QUOC","sale":1998.1,"cogs":881.01,"profit":1117.09},
+{"name":"SERVICE","sale":2409.54,"cogs":0.0,"profit":2409.54},
+{"name":"SHIMANO","sale":160.95,"cogs":85.89,"profit":75.06},
+{"name":"Schwalbe","sale":588.57,"cogs":401.7,"profit":186.87},
+{"name":"SwissStop","sale":283.81,"cogs":0.0,"profit":283.81},
+{"name":"TACX","sale":1075.24,"cogs":855.2,"profit":220.04},
+{"name":"Unknown","sale":-94.85,"cogs":0.0,"profit":-94.85},
+{"name":"VENTUM","sale":843.14,"cogs":338.54,"profit":504.6},
+{"name":"VITTORIA","sale":364.77,"cogs":182.86,"profit":181.91},
+{"name":"Wyld","sale":0.01,"cogs":399.0,"profit":-398.99},
+{"name":"XLAB","sale":664.76,"cogs":178.96,"profit":485.8}
+],
+"total":{"sale":10720.32,"cogs":4614.68,"profit":6105.64},
+"onlineSale":3007.62,
+"otherSale":7712.7,
+"onlineOrders":[
+{"doc":"V-INV-03860, V-CR-00157","customer":"Rosanna Nocakovic","sale":1780.0},
+{"doc":"V-INV-03869","customer":"Sohom Bhattacharya","sale":1075.24},
+{"doc":"V-INV-03882","customer":"JOHN RHO","sale":152.38}
+],
+"docCount":31,
+"label":"Week of 03 Aug - 09 Aug 2026"
+}
+};
+const WEEKLY_ORDER = Object.keys(WEEKLY_DATA).sort();
+
+let vatOn = false;
+let currentPeriodKey = WEEKLY_ORDER.length ? WEEKLY_ORDER[WEEKLY_ORDER.length - 1] : 'Aug_2026';
+const saleTextRegistry = [];
+let activeCharts = [];
+
+const fmt = (n) => {
+  if (n === null || n === undefined) return '-';
+  const num = Number(n);
+  if (Number.isNaN(num)) return '-';
+  return (num < 0 ? '-' : '') + Math.abs(num).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+};
+
+function saleSpan(baseValue, suffix) {
+  const span = document.createElement('span');
+  span.textContent = (baseValue === 0 ? '-' : fmt(baseValue) + (suffix || ''));
+  if (baseValue) saleTextRegistry.push({ el: span, base: baseValue, suffix: suffix || '' });
+  return span;
+}
+
+function applyVAT() {
+  saleTextRegistry.forEach(({ el, base, suffix }) => {
+    const v = vatOn ? base * VAT_RATE : base;
+    el.textContent = fmt(v) + suffix;
+  });
+  activeCharts.forEach(({ chart, datasetIndexes, baseRows }) => {
+    datasetIndexes.forEach((di, idx) => {
+      chart.data.datasets[di].data = baseRows[idx].map(v => vatOn ? v * VAT_RATE : v);
+    });
+    chart.update();
+  });
+}
+
+document.getElementById('vatBtn').addEventListener('click', function () {
+  vatOn = !vatOn;
+  this.textContent = vatOn ? 'Show sale excl. VAT' : 'Show sale incl. 5% VAT';
+  this.style.background = vatOn ? '#E1F5EE' : '#fff';
+  this.style.color = vatOn ? '#085041' : '#0b0b0b';
+  applyVAT();
+});
+
+const select = document.getElementById('periodSelect');
+if (WEEKLY_ORDER.length) {
+  const weekGroup = document.createElement('optgroup');
+  weekGroup.label = 'Weeks (Mon-Sun)';
+  WEEKLY_ORDER.forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = WEEKLY_DATA[k].label;
+    weekGroup.appendChild(opt);
+  });
+  select.appendChild(weekGroup);
+}
+const monthGroup = document.createElement('optgroup');
+monthGroup.label = 'Months';
+MONTHLY_ORDER.filter(k => MONTHLY_DATA[k]).forEach(k => {
+  const opt = document.createElement('option');
+  opt.value = k;
+  opt.textContent = MONTHLY_LABELS[k];
+  monthGroup.appendChild(opt);
+});
+select.appendChild(monthGroup);
+select.value = currentPeriodKey;
+select.addEventListener('change', () => {
+  currentPeriodKey = select.value;
+  renderCurrentPeriod();
+});
+
+function renderMetrics(container, m) {
+  const wrap = document.createElement('div');
+  wrap.className = 'metrics';
+  const makeCard = (label, valueEl) => {
+    const c = document.createElement('div');
+    c.className = 'metric';
+    const p1 = document.createElement('p'); p1.className = 'label'; p1.textContent = label;
+    const p2 = document.createElement('p'); p2.className = 'value'; p2.appendChild(valueEl);
+    c.appendChild(p1); c.appendChild(p2);
+    wrap.appendChild(c);
+  };
+  makeCard('Total sale', saleSpan(m.sale, ' AED'));
+  const cogsVal = document.createElement('span'); cogsVal.textContent = fmt(m.cogs) + ' AED';
+  makeCard('Total COGS', cogsVal);
+  const profitVal = document.createElement('span'); profitVal.textContent = fmt(m.profit) + ' AED';
+  makeCard('Total profit', profitVal);
+  const marginVal = document.createElement('span'); marginVal.textContent = (Math.abs(m.sale) >= 1 ? ((m.profit / m.sale) * 100).toFixed(1) : '0') + '%';
+  makeCard('Margin', marginVal);
+  container.appendChild(wrap);
+}
+
+function renderBrandSection(container, brands, total, chartId) {
+  const section = document.createElement('section');
+  section.innerHTML = `<h2 class="section-title">Revenue by brand (Dear - only source)</h2>
+    <div class="legend">
+      <span><span class="sw" style="background:#2a78d6"></span>Sale</span>
+      <span><span class="sw" style="background:#eb6834"></span>COGS</span>
+      <span><span class="sw" style="background:#1baf7a"></span>Profit</span>
+    </div>
+    <div class="chart-wrap"><canvas id="${chartId}" role="img" aria-label="Bar chart of sale, COGS and profit by brand"></canvas></div>
+    <table>
+      <thead><tr><th>Brand</th><th class="num">Sale</th><th class="num">COGS</th><th class="num">Profit</th><th class="num">Margin</th></tr></thead>
+      <tbody></tbody>
+    </table>`;
+  container.appendChild(section);
+  const tbody = section.querySelector('tbody');
+  const margin = (sale, profit) => (Math.abs(sale) >= 1 ? ((profit / sale) * 100).toFixed(1) + '%' : '-');
+
+  const addRow = (name, b, isTotal) => {
+    const tr = document.createElement('tr');
+    if (isTotal) tr.className = 'total';
+    const tdName = document.createElement('td'); tdName.textContent = name;
+    const tdSale = document.createElement('td'); tdSale.className = 'num'; tdSale.appendChild(saleSpan(b.sale, ''));
+    const tdCogs = document.createElement('td'); tdCogs.className = 'num'; tdCogs.textContent = b.cogs ? fmt(b.cogs) : '-';
+    const tdProfit = document.createElement('td'); tdProfit.className = 'num'; tdProfit.textContent = b.profit ? fmt(b.profit) : '-';
+    const tdMargin = document.createElement('td'); tdMargin.className = 'num'; tdMargin.textContent = margin(b.sale, b.profit);
+    tr.appendChild(tdName); tr.appendChild(tdSale); tr.appendChild(tdCogs); tr.appendChild(tdProfit); tr.appendChild(tdMargin);
+    tbody.appendChild(tr);
+  };
+
+  brands.forEach(b => addRow(b.name, b, false));
+  addRow('TOTAL (Dear)', total, true);
+
+  const sorted = [...brands].filter(b => b.sale > 0).sort((a, b) => b.sale - a.sale);
+  const chart = new Chart(document.getElementById(chartId), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(b => b.name),
+      datasets: [
+        { label: 'Sale', data: sorted.map(b => b.sale), backgroundColor: '#2a78d6', borderRadius: 4 },
+        { label: 'COGS', data: sorted.map(b => b.cogs), backgroundColor: '#eb6834', borderRadius: 4 },
+        { label: 'Profit', data: sorted.map(b => b.profit), backgroundColor: '#1baf7a', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 }, grid: { display: false } },
+        y: { grid: { color: '#e1e0d9' }, ticks: { callback: (v) => v.toLocaleString() + ' AED' } }
+      }
+    }
+  });
+  activeCharts.push({ chart, datasetIndexes: [0], baseRows: [sorted.map(b => b.sale)] });
+}
+
+function renderChannelSection(container, summary, totalSale, chartId) {
+  const { onlineSale, otherSale, onlineOrders } = summary;
+  const section = document.createElement('section');
+  const onlinePct = totalSale ? ((onlineSale / totalSale) * 100).toFixed(1) : '0';
+  section.innerHTML = `<h2 class="section-title">Online vs in-store split <span class="badge">Dear</span></h2>
+    <p class="sub" style="margin-bottom:1rem;">Online = every Dear document number that includes a "Shipping - Free Shipping" line. Everything else counts as in-store/other.</p>
+    <div class="chart-wrap small"><canvas id="${chartId}" role="img" aria-label="Bar chart comparing online and in-store or other revenue"></canvas></div>
+    <table style="margin-top:1rem;">
+      <thead><tr><th>Document #</th><th>Customer</th><th class="num">Sale (AED)</th></tr></thead>
+      <tbody></tbody>
+    </table>`;
+  container.appendChild(section);
+  const tbody = section.querySelector('tbody');
+  (onlineOrders.length ? onlineOrders : [{doc: 'None this period', customer: '', sale: 0}]).forEach(o => {
+    const tr = document.createElement('tr');
+    const tdDoc = document.createElement('td'); tdDoc.textContent = o.doc;
+    const tdCust = document.createElement('td'); tdCust.textContent = o.customer;
+    const tdSale = document.createElement('td'); tdSale.className = 'num'; tdSale.appendChild(saleSpan(o.sale, ''));
+    tr.appendChild(tdDoc); tr.appendChild(tdCust); tr.appendChild(tdSale);
+    tbody.appendChild(tr);
+  });
+  const totalTr = document.createElement('tr'); totalTr.className = 'total';
+  const tdLabel = document.createElement('td'); tdLabel.colSpan = 2; tdLabel.textContent = `Total online (${onlinePct}% of sale)`;
+  const tdTotal = document.createElement('td'); tdTotal.className = 'num'; tdTotal.appendChild(saleSpan(onlineSale, ''));
+  totalTr.appendChild(tdLabel); totalTr.appendChild(tdTotal);
+  tbody.appendChild(totalTr);
+
+  const chart = new Chart(document.getElementById(chartId), {
+    type: 'bar',
+    data: {
+      labels: ['Online', 'In-store / other'],
+      datasets: [{ data: [onlineSale, otherSale], backgroundColor: ['#2a78d6', '#898781'], borderRadius: 4 }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#e1e0d9' }, ticks: { callback: (v) => v.toLocaleString() + ' AED' } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+  activeCharts.push({ chart, datasetIndexes: [0], baseRows: [[onlineSale, otherSale]] });
+}
+
+function renderCurrentPeriod() {
+  const periodContainer = document.getElementById('periodContainer');
+  activeCharts.forEach(({ chart }) => chart.destroy());
+  activeCharts = [];
+  saleTextRegistry.length = 0;
+  periodContainer.innerHTML = '';
+
+  const isWeek = Object.prototype.hasOwnProperty.call(WEEKLY_DATA, currentPeriodKey);
+  const snap = isWeek ? WEEKLY_DATA[currentPeriodKey] : MONTHLY_DATA[currentPeriodKey];
+  if (!snap) { periodContainer.textContent = 'No data for this period.'; return; }
+
+  const h = document.createElement('h2');
+  h.className = 'period-title';
+  h.textContent = isWeek ? snap.label : (MONTHLY_LABELS[currentPeriodKey] || currentPeriodKey);
+  periodContainer.appendChild(h);
+
+  renderMetrics(periodContainer, snap.total);
+  renderBrandSection(periodContainer, snap.brands, snap.total, 'chart-brand');
+  renderChannelSection(periodContainer, { onlineSale: snap.onlineSale, otherSale: snap.otherSale, onlineOrders: snap.onlineOrders }, snap.total.sale, 'chart-channel');
+
+  applyVAT();
+}
+
+renderCurrentPeriod();
+</script>
+</body>
+</html>
